@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vocab Game</title>
+  <title>Vocabulary Challenge</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
     <h1>Vocabulary Challenge</h1>
-    <nav>
-      <button onclick="startLevel(1)">Level 1</button>
-      <button onclick="startLevel(2)">Level 2</button>
-      <button onclick="startLevel(3)">Level 3</button>
-      <button onclick="startLevel(4)">Level 4</button>
-    </nav>
-    <div id="timer">Time: 0s</div>
+    <div class="top-bar">
+      <input type="text" id="player-name" placeholder="Your Name (optional)" />
+      <div class="buttons">
+        <button onclick="startLevel(1)">Level 1</button>
+        <button onclick="startLevel(2)">Level 2</button>
+        <button onclick="startLevel(3)">Level 3</button>
+        <button onclick="startLevel(4)">Level 4</button>
+      </div>
+    </div>
+    <div id="timer">⏱️ Time: 0s</div>
   </header>
   <main id="game-container"></main>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
