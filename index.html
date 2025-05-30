@@ -110,62 +110,163 @@
             color: #667eea;
         }
 
-        /* Level 1: Drag & Drop */
-        .drag-drop-area {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        .word-list {
-            background: #f8f9fa;
-            border-radius: 15px;
+        /* Level 1: Modern Connection Game */
+        .connection-area {
+            position: relative;
+            height: 600px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 20px;
             padding: 20px;
-            min-height: 400px;
+            overflow: hidden;
         }
 
-        .word-item {
-            background: #667eea;
-            color: white;
+        .word-card {
+            position: absolute;
             padding: 12px 20px;
-            margin: 10px 0;
-            border-radius: 25px;
-            cursor: grab;
-            text-align: center;
+            border-radius: 12px;
             font-weight: bold;
-            transition: all 0.3s;
+            font-size: 16px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 3px solid transparent;
+            min-width: 120px;
+            text-align: center;
         }
 
-        .word-item:hover {
-            background: #5a67d8;
-            transform: scale(1.05);
+        .word-card.english {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
 
-        .word-item.dragging {
-            opacity: 0.5;
+        .word-card.german {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .word-card:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .word-card.selected {
+            border-color: #ffd700;
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 10px 30px rgba(255,215,0,0.4);
+        }
+
+        .word-card.matched {
+            opacity: 0.7;
+            transform: scale(0.9);
+            cursor: default;
+            filter: brightness(0.8);
+        }
+
+        .word-card.dragging {
+            transform: scale(1.1) rotate(3deg);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            z-index: 1000;
             cursor: grabbing;
         }
 
-        .drop-zone {
-            border: 2px dashed #dee2e6;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            min-height: 60px;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 4px;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            border-radius: 2px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1;
+            box-shadow: 0 2px 10px rgba(255,215,0,0.3);
+        }
+
+        .connection-line.show {
+            opacity: 1;
+            animation: drawLine 0.5s ease-out;
+        }
+
+        @keyframes drawLine {
+            from { width: 0; }
+            to { width: var(--line-length); }
+        }
+
+        .connection-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #667eea;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .match-animation {
+            position: absolute;
+            pointer-events: none;
+            font-size: 48px;
+            z-index: 100;
+            animation: matchSuccess 1s ease-out forwards;
+        }
+
+        @keyframes matchSuccess {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0;
+            }
+        }
+
+        .instruction-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .color-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .legend-item {
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
+            gap: 10px;
+            font-weight: bold;
         }
 
-        .drop-zone.drag-over {
-            border-color: #667eea;
-            background: #e7f3ff;
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
         }
 
-        .drop-zone.filled {
-            border-color: #28a745;
-            background: #d4edda;
+        .legend-color.english {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .legend-color.german {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
         /* Level 2: Translation */
@@ -435,7 +536,7 @@
             <div class="level-card" onclick="startLevel(1)">
                 <div class="level-icon">🔗</div>
                 <div class="level-title">Level 1: Zuordnung</div>
-                <div class="level-description">20 Wörter per Drag & Drop zuordnen</div>
+                <div class="level-description">10 Wörter per Klick zuordnen</div>
                 <div class="highscore" id="highscore1">Bester: --</div>
             </div>
             
@@ -646,91 +747,288 @@
             startLevel(currentLevel);
         }
 
-        // LEVEL 1: Drag & Drop
+        // LEVEL 1: Modern Connection Game
         function initLevel1() {
-            const selectedWords = shuffleArray(vocabulary).slice(0, 20);
+            const selectedWords = shuffleArray(vocabulary).slice(0, 10); // Reduziert auf 10 Wörter
             gameData = selectedWords;
             
-            updateProgress(0, 20);
-            
-            const shuffledEnglish = shuffleArray([...selectedWords]);
-            const shuffledGerman = shuffleArray([...selectedWords]);
+            updateProgress(0, 10);
             
             const content = `
-                <div class="drag-drop-area">
-                    <div class="word-list">
-                        <h3 style="text-align: center; margin-bottom: 20px;">Englische Wörter</h3>
-                        ${shuffledEnglish.map((word, index) => 
-                            `<div class="word-item" draggable="true" data-english="${word.english}" data-index="${index}">
-                                ${word.english}
-                            </div>`
-                        ).join('')}
+                <div class="instruction-panel">
+                    <h3>🔗 Ziehe zusammengehörende Wörter aufeinander!</h3>
+                    <p>Verschiebe die Karten frei und bringe richtige Paare zusammen.</p>
+                    <div class="color-legend">
+                        <div class="legend-item">
+                            <div class="legend-color english"></div>
+                            <span>Englisch</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color german"></div>
+                            <span>Deutsch</span>
+                        </div>
                     </div>
-                    <div class="word-list">
-                        <h3 style="text-align: center; margin-bottom: 20px;">Deutsche Übersetzungen</h3>
-                        ${shuffledGerman.map((word, index) => 
-                            `<div class="drop-zone" data-german="${word.german}" data-correct="${word.english}">
-                                ${word.german}
-                            </div>`
-                        ).join('')}
+                </div>
+                <div class="connection-area" id="connectionArea">
+                    <div class="connection-counter">
+                        <span id="matchCounter">0</span> / 10 Paare
                     </div>
                 </div>
             `;
             
             document.getElementById('gameContent').innerHTML = content;
-            initDragAndDrop();
+            setupConnectionGame(selectedWords);
         }
 
-        function initDragAndDrop() {
-            const wordItems = document.querySelectorAll('.word-item');
-            const dropZones = document.querySelectorAll('.drop-zone');
+        function setupConnectionGame(words) {
+            const area = document.getElementById('connectionArea');
+            let matchedPairs = 0;
+            let draggedCard = null;
             
-            wordItems.forEach(item => {
-                item.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', e.target.dataset.english);
-                    e.target.classList.add('dragging');
-                });
+            // Englische Wörter verteilen (linke Hälfte)
+            words.forEach((word, index) => {
+                const englishCard = document.createElement('div');
+                englishCard.className = 'word-card english';
+                englishCard.textContent = word.english;
+                englishCard.dataset.word = word.english;
+                englishCard.dataset.correct = word.german;
+                englishCard.draggable = true;
                 
-                item.addEventListener('dragend', (e) => {
-                    e.target.classList.remove('dragging');
-                });
+                // Zufällige Position in der linken Hälfte
+                const x = Math.random() * 250; // 0-250px (linke Hälfte)
+                const y = Math.random() * 500; // 0-500px (ganze Höhe)
+                
+                englishCard.style.left = x + 'px';
+                englishCard.style.top = y + 'px';
+                
+                setupDragEvents(englishCard);
+                area.appendChild(englishCard);
             });
             
-            dropZones.forEach(zone => {
-                zone.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    zone.classList.add('drag-over');
-                });
+            // Deutsche Wörter verteilen (rechte Hälfte)
+            const shuffledGerman = shuffleArray([...words]);
+            shuffledGerman.forEach((word, index) => {
+                const germanCard = document.createElement('div');
+                germanCard.className = 'word-card german';
+                germanCard.textContent = word.german;
+                germanCard.dataset.word = word.german;
+                germanCard.dataset.english = word.english;
+                germanCard.draggable = true;
                 
-                zone.addEventListener('dragleave', () => {
-                    zone.classList.remove('drag-over');
-                });
+                // Zufällige Position in der rechten Hälfte
+                const x = 350 + Math.random() * 250; // 350-600px (rechte Hälfte)
+                const y = Math.random() * 500; // 0-500px (ganze Höhe)
                 
-                zone.addEventListener('drop', (e) => {
+                germanCard.style.left = x + 'px';
+                germanCard.style.top = y + 'px';
+                
+                setupDragEvents(germanCard);
+                area.appendChild(germanCard);
+            });
+            
+            function setupDragEvents(card) {
+                let isDragging = false;
+                let startX, startY, initialX, initialY;
+                
+                // Mouse Events
+                card.addEventListener('mousedown', startDrag);
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', endDrag);
+                
+                // Touch Events für Mobile
+                card.addEventListener('touchstart', startDrag, { passive: false });
+                document.addEventListener('touchmove', drag, { passive: false });
+                document.addEventListener('touchend', endDrag);
+                
+                function startDrag(e) {
+                    if (card.classList.contains('matched')) return;
+                    
+                    isDragging = true;
+                    draggedCard = card;
+                    card.classList.add('dragging');
+                    card.style.zIndex = '1000';
+                    
+                    const clientX = e.clientX || e.touches[0].clientX;
+                    const clientY = e.clientY || e.touches[0].clientY;
+                    
+                    startX = clientX;
+                    startY = clientY;
+                    initialX = parseInt(card.style.left);
+                    initialY = parseInt(card.style.top);
+                    
                     e.preventDefault();
-                    zone.classList.remove('drag-over');
+                }
+                
+                function drag(e) {
+                    if (!isDragging || !draggedCard) return;
                     
-                    const droppedWord = e.dataTransfer.getData('text/plain');
-                    const correctWord = zone.dataset.correct;
+                    const clientX = e.clientX || e.touches[0].clientX;
+                    const clientY = e.clientY || e.touches[0].clientY;
                     
-                    if (droppedWord === correctWord) {
-                        zone.classList.add('filled');
-                        zone.innerHTML = `${zone.dataset.german}<br><small>${droppedWord}</small>`;
-                        
-                        // Wort entfernen
-                        const draggedItem = document.querySelector(`[data-english="${droppedWord}"]`);
-                        if (draggedItem) draggedItem.remove();
-                        
-                        // Fortschritt prüfen
-                        const filled = document.querySelectorAll('.drop-zone.filled').length;
-                        updateProgress(filled, 20);
-                        
-                        if (filled === 20) {
-                            finishLevel();
+                    const deltaX = clientX - startX;
+                    const deltaY = clientY - startY;
+                    
+                    draggedCard.style.left = (initialX + deltaX) + 'px';
+                    draggedCard.style.top = (initialY + deltaY) + 'px';
+                    
+                    e.preventDefault();
+                }
+                
+                function endDrag(e) {
+                    if (!isDragging || !draggedCard) return;
+                    
+                    isDragging = false;
+                    draggedCard.classList.remove('dragging');
+                    draggedCard.style.zIndex = '10';
+                    
+                    // Prüfe Kollision mit anderen Karten
+                    checkForMatch(draggedCard);
+                    
+                    draggedCard = null;
+                }
+            }
+            
+            function checkForMatch(movedCard) {
+                const movedRect = movedCard.getBoundingClientRect();
+                const allCards = document.querySelectorAll('.word-card:not(.matched)');
+                
+                for (let otherCard of allCards) {
+                    if (otherCard === movedCard) continue;
+                    
+                    const otherRect = otherCard.getBoundingClientRect();
+                    
+                    // Prüfe Überlappung
+                    if (isOverlapping(movedRect, otherRect)) {
+                        // Prüfe ob es ein korrektes Paar ist
+                        if (isCorrectMatch(movedCard, otherCard)) {
+                            handleCorrectMatch(movedCard, otherCard);
+                            matchedPairs++;
+                            updateProgress(matchedPairs, 10);
+                            document.getElementById('matchCounter').textContent = matchedPairs;
+                            
+                            if (matchedPairs === 10) {
+                                setTimeout(() => finishLevel(), 1000);
+                            }
+                            return;
+                        } else {
+                            // Falsches Paar - Cards zurückfedern lassen
+                            handleIncorrectMatch(movedCard, otherCard);
+                            return;
                         }
                     }
-                });
-            });
+                }
+            }
+            
+            function isOverlapping(rect1, rect2) {
+                const overlap = !(rect1.right < rect2.left || 
+                                rect1.left > rect2.right || 
+                                rect1.bottom < rect2.top || 
+                                rect1.top > rect2.bottom);
+                
+                if (overlap) {
+                    // Prüfe ob mindestens 30% Überlappung vorhanden
+                    const overlapArea = Math.max(0, Math.min(rect1.right, rect2.right) - Math.max(rect1.left, rect2.left)) *
+                                      Math.max(0, Math.min(rect1.bottom, rect2.bottom) - Math.max(rect1.top, rect2.top));
+                    const minArea = Math.min(rect1.width * rect1.height, rect2.width * rect2.height);
+                    
+                    return overlapArea / minArea > 0.3; // 30% Überlappung erforderlich
+                }
+                return false;
+            }
+            
+            function isCorrectMatch(card1, card2) {
+                const english1 = card1.classList.contains('english') ? card1.dataset.word : card1.dataset.english;
+                const german1 = card1.classList.contains('german') ? card1.dataset.word : card1.dataset.correct;
+                
+                const english2 = card2.classList.contains('english') ? card2.dataset.word : card2.dataset.english;
+                const german2 = card2.classList.contains('german') ? card2.dataset.word : card2.dataset.correct;
+                
+                return (english1 === english2 && german1 === german2) ||
+                       (card1.classList.contains('english') && card2.classList.contains('german') && card1.dataset.correct === card2.dataset.word) ||
+                       (card1.classList.contains('german') && card2.classList.contains('english') && card1.dataset.english === card2.dataset.word);
+            }
+            
+            function handleCorrectMatch(card1, card2) {
+                // Success Animation und dann verschwinden lassen
+                showMatchAnimation(card1, card2);
+                
+                // Karten zum Zentrum bewegen und verkleinern
+                const centerX = (parseFloat(card1.style.left) + parseFloat(card2.style.left)) / 2;
+                const centerY = (parseFloat(card1.style.top) + parseFloat(card2.style.top)) / 2;
+                
+                card1.style.transition = 'all 0.6s ease-out';
+                card2.style.transition = 'all 0.6s ease-out';
+                
+                card1.style.left = centerX + 'px';
+                card1.style.top = centerY + 'px';
+                card1.style.transform = 'scale(0.8)';
+                
+                card2.style.left = centerX + 'px';
+                card2.style.top = centerY + 'px';
+                card2.style.transform = 'scale(0.8)';
+                
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                
+                // Nach Animation entfernen
+                setTimeout(() => {
+                    card1.style.transition = 'all 0.4s ease-in';
+                    card2.style.transition = 'all 0.4s ease-in';
+                    card1.style.transform = 'scale(0) rotate(360deg)';
+                    card2.style.transform = 'scale(0) rotate(-360deg)';
+                    card1.style.opacity = '0';
+                    card2.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        card1.remove();
+                        card2.remove();
+                    }, 400);
+                }, 600);
+            }
+            
+            function handleIncorrectMatch(card1, card2) {
+                // Shake Animation
+                card1.style.animation = 'shake 0.5s ease-in-out';
+                card2.style.animation = 'shake 0.5s ease-in-out';
+                
+                setTimeout(() => {
+                    card1.style.animation = '';
+                    card2.style.animation = '';
+                }, 500);
+            }
+            
+            function showMatchAnimation(card1, card2) {
+                const emoji = document.createElement('div');
+                emoji.className = 'match-animation';
+                emoji.textContent = '🎉';
+                emoji.style.fontSize = '64px';
+                
+                const centerX = (parseFloat(card1.style.left) + parseFloat(card2.style.left)) / 2;
+                const centerY = (parseFloat(card1.style.top) + parseFloat(card2.style.top)) / 2;
+                
+                emoji.style.left = centerX + 'px';
+                emoji.style.top = (centerY - 30) + 'px';
+                
+                area.appendChild(emoji);
+                
+                setTimeout(() => emoji.remove(), 1000);
+            }
+        }
+
+        // Shake-Animation zu CSS hinzufügen
+        const shakeKeyframes = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                75% { transform: translateX(10px); }
+            }
+        `;
+        
+        if (!document.querySelector('#shake-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'shake-keyframes';
+            style.textContent = shakeKeyframes;
+            document.head.appendChild(style);
         }
 
         // LEVEL 2: Translation
