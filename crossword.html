@@ -389,8 +389,16 @@
                         number: i === 0 ? wordNumber : undefined
                     };
                 } else {
+                    // Kreuzung - füge neues Wort hinzu
                     newGrid[r][c].words.push({ number: wordNumber, direction, position: i });
+                    
+                    // Wenn das neue Wort hier startet, füge die Nummer hinzu
                     if (i === 0) {
+                        newGrid[r][c].number = wordNumber;
+                    }
+                    
+                    // Falls das Feld noch keine Nummer hatte, aber jetzt ein Wortanfang ist
+                    if (!newGrid[r][c].number && i === 0) {
                         newGrid[r][c].number = wordNumber;
                     }
                 }
@@ -556,6 +564,7 @@
                     cellDiv.dataset.col = col;
                     
                     if (cell.type === 'letter') {
+                        // Nummer hinzufügen wenn vorhanden
                         if (cell.number) {
                             const numberSpan = document.createElement('span');
                             numberSpan.className = 'cell-number';
@@ -563,13 +572,23 @@
                             cellDiv.appendChild(numberSpan);
                         }
                         
+                        // Input-Feld erstellen
                         const input = document.createElement('input');
                         input.className = 'cell-input';
                         input.type = 'text';
                         input.maxLength = 1;
+                        
+                        // Bereits eingegebenen Wert setzen
+                        const existingValue = userAnswers[`${row}-${col}`];
+                        if (existingValue) {
+                            input.value = existingValue;
+                        }
+                        
                         input.addEventListener('input', (e) => handleCellInput(e, row, col));
                         input.addEventListener('click', () => handleCellClick(row, col));
                         input.addEventListener('keydown', (e) => handleKeyDown(e, row, col));
+                        input.addEventListener('focus', () => handleCellClick(row, col));
+                        
                         cellDiv.appendChild(input);
                     }
                     
@@ -607,11 +626,25 @@
             
             setSelectedCell(row, col);
             
+            // Wenn das Feld eine Nummer hat (Wortanfang), bestimme automatisch die Richtung
+            if (cell.number && cell.words && cell.words.length > 0) {
+                // Finde das Wort, das hier startet
+                const startingWord = cell.words.find(w => w.position === 0);
+                if (startingWord) {
+                    currentDirection = startingWord.direction;
+                    selectClue(startingWord.number, startingWord.direction);
+                    return;
+                }
+            }
+            
+            // Ansonsten normale Logik für Richtungsbestimmung
             if (cell.words && cell.words.length > 0) {
+                // Wenn wir bereits eine Richtung haben, prüfe ob sie hier verfügbar ist
                 const wordInDirection = cell.words.find(w => w.direction === currentDirection);
                 if (wordInDirection) {
                     selectClue(wordInDirection.number, currentDirection);
                 } else {
+                    // Wechsle zur anderen verfügbaren Richtung
                     const firstWord = cell.words[0];
                     currentDirection = firstWord.direction;
                     selectClue(firstWord.number, firstWord.direction);
@@ -622,7 +655,9 @@
         function handleCellInput(e, row, col) {
             const value = e.target.value.toUpperCase();
             if (value.match(/^[A-Z]$/)) {
+                // Überschreibe immer den aktuellen Wert (auch wenn bereits ein Buchstabe da ist)
                 userAnswers[`${row}-${col}`] = value;
+                e.target.value = value;
                 updateProgress();
                 
                 // Prüfe ob alle 10 Wörter vollständig sind
@@ -631,12 +666,26 @@
                 } else {
                     moveToNextCell(row, col);
                 }
+            } else if (value === '') {
+                // Feld wurde geleert
+                delete userAnswers[`${row}-${col}`];
+                updateProgress();
             }
         }
 
         function handleKeyDown(e, row, col) {
             if (e.key === 'Backspace') {
+                e.preventDefault();
+                
+                // Aktuelles Feld löschen
                 delete userAnswers[`${row}-${col}`];
+                const currentInput = document.querySelector(`[data-row="${row}"][data-col="${col}"] input`);
+                if (currentInput) {
+                    currentInput.value = '';
+                }
+                
+                // Zum vorherigen Feld springen
+                moveToPreviousCell(row, col);
                 updateProgress();
             } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -706,6 +755,26 @@
             if (nextRow < GRID_SIZE && nextCol < GRID_SIZE && grid[nextRow][nextCol].type === 'letter') {
                 setSelectedCell(nextRow, nextCol);
                 const input = document.querySelector(`[data-row="${nextRow}"][data-col="${nextCol}"] input`);
+                if (input) {
+                    input.focus();
+                }
+            }
+        }
+
+        function moveToPreviousCell(row, col) {
+            let prevRow = row;
+            let prevCol = col;
+            
+            if (currentDirection === 'across') {
+                prevCol--;
+            } else {
+                prevRow--;
+            }
+            
+            if (prevRow >= 0 && prevRow < GRID_SIZE && prevCol >= 0 && prevCol < GRID_SIZE && 
+                grid[prevRow][prevCol].type === 'letter') {
+                setSelectedCell(prevRow, prevCol);
+                const input = document.querySelector(`[data-row="${prevRow}"][data-col="${prevCol}"] input`);
                 if (input) {
                     input.focus();
                 }
