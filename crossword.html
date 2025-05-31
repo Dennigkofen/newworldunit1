@@ -680,4 +680,126 @@
             
             switch(key) {
                 case 'ArrowUp': newRow--; break;
-                case 'Arrow
+                case 'ArrowDown': newRow++; break;
+                case 'ArrowLeft': newCol--; break;
+                case 'ArrowRight': newCol++; break;
+            }
+            
+            if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE && 
+                grid[newRow][newCol].type === 'letter') {
+                setSelectedCell(newRow, newCol);
+                const input = document.querySelector(`[data-row="${newRow}"][data-col="${newCol}"] input`);
+                if (input) {
+                    input.focus();
+                }
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            const finalTime = Date.now() - startTime;
+            
+            document.getElementById('finalTime').textContent = formatTime(finalTime);
+            document.getElementById('successModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            loadLeaderboard();
+        }
+
+        async function saveScore() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) {
+                alert('Bitte gib deinen Namen ein!');
+                return;
+            }
+            
+            const finalTime = Date.now() - startTime;
+            
+            try {
+                const score = {
+                    name: name,
+                    time: finalTime,
+                    timestamp: Date.now()
+                };
+                
+                await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(score)
+                });
+                
+                closeModal();
+                
+            } catch (error) {
+                console.error('Fehler beim Speichern:', error);
+                alert('Fehler beim Speichern der Punktzahl!');
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        const leaderboard = Object.values(data)
+                            .sort((a, b) => a.time - b.time)
+                            .slice(0, 10);
+                        
+                        displayLeaderboard(leaderboard);
+                    }
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Bestenliste:', error);
+            }
+        }
+
+        function displayLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard');
+            
+            if (leaderboard.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-8">Noch keine Einträge vorhanden</div>';
+                return;
+            }
+            
+            container.innerHTML = leaderboard.map((entry, index) => {
+                let trophyIcon = '';
+                let bgClass = 'bg-gray-50';
+                
+                if (index === 0) {
+                    trophyIcon = '<span class="trophy-gold text-xl">🥇</span>';
+                    bgClass = 'bg-yellow-100 border-yellow-300 border-2';
+                } else if (index === 1) {
+                    trophyIcon = '<span class="trophy-silver text-xl">🥈</span>';
+                    bgClass = 'bg-gray-100 border-gray-300 border-2';
+                } else if (index === 2) {
+                    trophyIcon = '<span class="trophy-bronze text-xl">🥉</span>';
+                    bgClass = 'bg-orange-100 border-orange-300 border-2';
+                }
+                
+                return `
+                    <div class="flex justify-between items-center p-4 rounded-lg ${bgClass} transition-all duration-200 hover:transform hover:translate-x-2">
+                        <div class="flex items-center gap-3">
+                            ${trophyIcon || `<span class="font-bold text-gray-500 text-lg">#${index + 1}</span>`}
+                            <span class="font-medium text-gray-800">${entry.name}</span>
+                        </div>
+                        <span class="font-mono font-bold text-purple-600 text-lg">
+                            ${formatTime(entry.time)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Beim Laden der Seite
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLeaderboard();
+        });
+    </script>
+</body>
+</html>
