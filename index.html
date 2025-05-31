@@ -81,106 +81,140 @@
         </div>
 
         <!-- Games Section -->
-        <div class="grid md:grid-cols-3 gap-8 mb-12">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <!-- Drag & Drop Game -->
-            <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
-                <div class="text-center mb-6">
-                    <div class="text-6xl mb-4 icon-bounce">🎯</div>
-                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Wort-Zuordnung</h2>
-                    <p class="text-gray-600">Verbinde deutsche und englische Wörter per Drag & Drop</p>
+            <div class="game-card rounded-2xl p-6 border border-white/20 shadow-2xl">
+                <div class="text-center mb-4">
+                    <div class="text-5xl mb-3 icon-bounce">🎯</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Wort-Zuordnung</h2>
+                    <p class="text-gray-600 text-sm">Verbinde deutsche und englische Wörter per Drag & Drop</p>
                 </div>
                 
-                <div class="space-y-4 mb-6">
-                    <div class="flex items-center justify-between text-sm text-gray-700">
+                <div class="space-y-2 mb-4 text-xs text-gray-700">
+                    <div class="flex justify-between">
                         <span>🎲 10 zufällige Wörter</span>
                         <span>⏱️ Zeitmessung</span>
                     </div>
-                    <div class="flex items-center justify-between text-sm text-gray-700">
+                    <div class="flex justify-between">
                         <span>🏆 Bestenliste</span>
                         <span>🎨 Post-it Design</span>
                     </div>
                 </div>
                 
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                        🏆 Top 5 Bestenliste
-                        <div id="drag-loading" class="loading-spinner ml-3 hidden"></div>
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                        🏆 Top 3
+                        <div id="drag-loading" class="loading-spinner ml-2 scale-50 hidden"></div>
                     </h3>
-                    <div id="drag-leaderboard" class="space-y-2">
+                    <div id="drag-leaderboard" class="space-y-1 text-xs">
                         <!-- Wird per JavaScript geladen -->
                     </div>
                 </div>
                 
-                <button onclick="playDragDropGame()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <button onclick="playDragDropGame()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
                     🎮 Jetzt spielen!
                 </button>
             </div>
 
             <!-- Crossword Game -->
-            <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
-                <div class="text-center mb-6">
-                    <div class="text-6xl mb-4 icon-bounce">🧩</div>
-                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Kreuzworträtsel</h2>
-                    <p class="text-gray-600">Löse Kreuzworträtsel mit englischen Hinweisen</p>
+            <div class="game-card rounded-2xl p-6 border border-white/20 shadow-2xl">
+                <div class="text-center mb-4">
+                    <div class="text-5xl mb-3 icon-bounce">🧩</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Kreuzworträtsel</h2>
+                    <p class="text-gray-600 text-sm">Löse Kreuzworträtsel mit englischen Hinweisen</p>
                 </div>
                 
-                <div class="space-y-4 mb-6">
-                    <div class="flex items-center justify-between text-sm text-gray-700">
+                <div class="space-y-2 mb-4 text-xs text-gray-700">
+                    <div class="flex justify-between">
                         <span>🎯 10 Wörter pro Rätsel</span>
                         <span>🧠 Englische Hinweise</span>
                     </div>
-                    <div class="flex items-center justify-between text-sm text-gray-700">
+                    <div class="flex justify-between">
                         <span>⌨️ Tastatureingabe</span>
-                        <span>📊 Intelligente Navigation</span>
+                        <span>📊 Navigation</span>
                     </div>
                 </div>
                 
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                        🏆 Top 5 Bestenliste
-                        <div id="crossword-loading" class="loading-spinner ml-3 hidden"></div>
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                        🏆 Top 3
+                        <div id="crossword-loading" class="loading-spinner ml-2 scale-50 hidden"></div>
                     </h3>
-                    <div id="crossword-leaderboard" class="space-y-2">
+                    <div id="crossword-leaderboard" class="space-y-1 text-xs">
                         <!-- Wird per JavaScript geladen -->
                     </div>
                 </div>
                 
-                <button onclick="playCrosswordGame()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <button onclick="playCrosswordGame()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
                     🧩 Jetzt spielen!
                 </button>
             </div>
 
             <!-- AI Explanation Game -->
-            <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
-                <div class="text-center mb-6">
-                    <div class="text-6xl mb-4 icon-bounce">🤖</div>
-                    <h2 class="text-3xl font-bold text-gray-800 mb-2">KI-Erklärungs-Spiel</h2>
-                    <p class="text-gray-600">Erkläre englische Wörter auf Englisch - KI bewertet!</p>
+            <div class="game-card rounded-2xl p-6 border border-white/20 shadow-2xl">
+                <div class="text-center mb-4">
+                    <div class="text-5xl mb-3 icon-bounce">🤖</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">KI-Erklärungs-Spiel</h2>
+                    <p class="text-gray-600 text-sm">Erkläre englische Wörter auf Englisch - KI bewertet!</p>
                 </div>
                 
-                <div class="space-y-4 mb-6">
-                    <div class="flex items-center justify-between text-sm text-gray-700">
+                <div class="space-y-2 mb-4 text-xs text-gray-700">
+                    <div class="flex justify-between">
                         <span>🤖 KI-Bewertung</span>
                         <span>📝 Englische Erklärungen</span>
                     </div>
-                    <div class="flex items-center justify-between text-sm text-gray-700">
+                    <div class="flex justify-between">
                         <span>✅ Präzisions-Check</span>
                         <span>🔄 Rechtschreib-Korrektur</span>
                     </div>
                 </div>
                 
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                        🏆 Top 5 Bestenliste
-                        <div id="explanation-loading" class="loading-spinner ml-3 hidden"></div>
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                        🏆 Top 3
+                        <div id="explanation-loading" class="loading-spinner ml-2 scale-50 hidden"></div>
                     </h3>
-                    <div id="explanation-leaderboard" class="space-y-2">
+                    <div id="explanation-leaderboard" class="space-y-1 text-xs">
                         <!-- Wird per JavaScript geladen -->
                     </div>
                 </div>
                 
-                <button onclick="playExplanationGame()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <button onclick="playExplanationGame()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
                     🤖 Jetzt spielen!
+                </button>
+            </div>
+
+            <!-- Wort-Sniper Game -->
+            <div class="game-card rounded-2xl p-6 border border-white/20 shadow-2xl">
+                <div class="text-center mb-4">
+                    <div class="text-5xl mb-3 icon-bounce">🎯</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Wort-Sniper</h2>
+                    <p class="text-gray-600 text-sm">Schieße fliegende Wörter ab und übersetze sie ins Deutsche!</p>
+                </div>
+                
+                <div class="space-y-2 mb-4 text-xs text-gray-700">
+                    <div class="flex justify-between">
+                        <span>🎮 Action-Gameplay</span>
+                        <span>⚡ Power-Ups</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>💖 Leben-System</span>
+                        <span>🔥 Combo-System</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                        🏆 Top 3
+                        <div id="sniper-loading" class="loading-spinner ml-2 scale-50 hidden"></div>
+                    </h3>
+                    <div id="sniper-leaderboard" class="space-y-1 text-xs">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
+                
+                <button onclick="playSniperGame()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
+                    🎯 Jetzt spielen!
                 </button>
             </div>
         </div>
@@ -196,7 +230,7 @@
                 <p class="text-gray-600">Die besten Spieler aller Zeiten</p>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Complete Drag & Drop Leaderboard -->
                 <div>
                     <h3 class="text-xl font-bold text-green-600 mb-4 text-center">
@@ -226,12 +260,22 @@
                         <!-- Wird per JavaScript geladen -->
                     </div>
                 </div>
+
+                <!-- Complete Sniper Leaderboard -->
+                <div>
+                    <h3 class="text-xl font-bold text-red-600 mb-4 text-center">
+                        🎯 Wort-Sniper Champions
+                    </h3>
+                    <div id="full-sniper-leaderboard" class="space-y-2">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Statistics -->
         <div class="mt-8 text-center">
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
                 <div class="game-card rounded-xl p-4 border border-white/20">
                     <div class="text-2xl font-bold text-gray-800" id="total-players">-</div>
                     <div class="text-sm text-gray-600">Spieler insgesamt</div>
@@ -251,6 +295,10 @@
                 <div class="game-card rounded-xl p-4 border border-white/20">
                     <div class="text-2xl font-bold text-gray-800" id="fastest-explanation">-</div>
                     <div class="text-sm text-gray-600">Schnellste Erklärung</div>
+                </div>
+                <div class="game-card rounded-xl p-4 border border-white/20">
+                    <div class="text-2xl font-bold text-gray-800" id="highest-sniper">-</div>
+                    <div class="text-sm text-gray-600">Höchste Sniper-Punkte</div>
                 </div>
             </div>
         </div>
@@ -273,6 +321,10 @@
 
         function playExplanationGame() {
             window.location.href = 'explanation.html';
+        }
+
+        function playSniperGame() {
+            window.location.href = 'englishtogerman.html';
         }
 
         // Zeit-Formatierung
@@ -300,10 +352,10 @@
                             .sort((a, b) => a.time - b.time)
                             .slice(0, 10);
                         
-                        // Top 5 für Game Card
-                        displayLeaderboard('drag-leaderboard', dragLeaderboard.slice(0, 5), 'green');
+                        // Top 3 für Game Card
+                        displayLeaderboard('drag-leaderboard', dragLeaderboard.slice(0, 3), 'green', 'time');
                         // Komplette Top 10 für Hall of Fame
-                        displayLeaderboard('full-drag-leaderboard', dragLeaderboard, 'green');
+                        displayLeaderboard('full-drag-leaderboard', dragLeaderboard, 'green', 'time');
                         
                         // Statistiken aktualisieren
                         document.getElementById('fastest-drag').textContent = 
@@ -327,10 +379,10 @@
                             .sort((a, b) => a.time - b.time)
                             .slice(0, 10);
                         
-                        // Top 5 für Game Card
-                        displayLeaderboard('crossword-leaderboard', crosswordLeaderboard.slice(0, 5), 'purple');
+                        // Top 3 für Game Card
+                        displayLeaderboard('crossword-leaderboard', crosswordLeaderboard.slice(0, 3), 'purple', 'time');
                         // Komplette Top 10 für Hall of Fame
-                        displayLeaderboard('full-crossword-leaderboard', crosswordLeaderboard, 'purple');
+                        displayLeaderboard('full-crossword-leaderboard', crosswordLeaderboard, 'purple', 'time');
                         
                         // Statistiken aktualisieren
                         document.getElementById('fastest-crossword').textContent = 
@@ -354,10 +406,10 @@
                             .sort((a, b) => a.time - b.time)
                             .slice(0, 10);
                         
-                        // Top 5 für Game Card
-                        displayLeaderboard('explanation-leaderboard', explanationLeaderboard.slice(0, 5), 'indigo');
+                        // Top 3 für Game Card
+                        displayLeaderboard('explanation-leaderboard', explanationLeaderboard.slice(0, 3), 'indigo', 'time');
                         // Komplette Top 10 für Hall of Fame
-                        displayLeaderboard('full-explanation-leaderboard', explanationLeaderboard, 'indigo');
+                        displayLeaderboard('full-explanation-leaderboard', explanationLeaderboard, 'indigo', 'time');
                         
                         // Statistiken aktualisieren
                         document.getElementById('fastest-explanation').textContent = 
@@ -370,47 +422,84 @@
                 document.getElementById('explanation-loading').classList.add('hidden');
             }
 
+            // Wort-Sniper Bestenliste laden
+            try {
+                document.getElementById('sniper-loading').classList.remove('hidden');
+                const sniperResponse = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/sniper-leaderboard.json');
+                if (sniperResponse.ok) {
+                    const sniperData = await sniperResponse.json();
+                    if (sniperData) {
+                        const sniperLeaderboard = Object.values(sniperData)
+                            .sort((a, b) => b.score - a.score) // Höchste Punkte zuerst
+                            .slice(0, 10);
+                        
+                        // Top 3 für Game Card
+                        displayLeaderboard('sniper-leaderboard', sniperLeaderboard.slice(0, 3), 'red', 'score');
+                        // Komplette Top 10 für Hall of Fame
+                        displayLeaderboard('full-sniper-leaderboard', sniperLeaderboard, 'red', 'score');
+                        
+                        // Statistiken aktualisieren
+                        document.getElementById('highest-sniper').textContent = 
+                            sniperLeaderboard.length > 0 ? sniperLeaderboard[0].score + ' P' : '-';
+                    }
+                }
+                document.getElementById('sniper-loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Fehler beim Laden der Wort-Sniper Bestenliste:', error);
+                document.getElementById('sniper-loading').classList.add('hidden');
+            }
+
             // Gesamtstatistiken berechnen
             updateTotalStats();
         }
 
-        function displayLeaderboard(elementId, leaderboard, color) {
+        function displayLeaderboard(elementId, leaderboard, color, displayType) {
             const container = document.getElementById(elementId);
             
             if (leaderboard.length === 0) {
-                container.innerHTML = '<div class="text-gray-500 text-center py-4">Noch keine Einträge</div>';
+                container.innerHTML = '<div class="text-gray-500 text-center py-2">Noch keine Einträge</div>';
                 return;
             }
 
             const colorClasses = {
                 green: 'border-green-200 bg-green-50',
                 purple: 'border-purple-200 bg-purple-50',
-                indigo: 'border-indigo-200 bg-indigo-50'
+                indigo: 'border-indigo-200 bg-indigo-50',
+                red: 'border-red-200 bg-red-50'
             };
+
+            const isCompact = elementId.includes('-leaderboard') && !elementId.includes('full-');
 
             container.innerHTML = leaderboard.map((entry, index) => {
                 let trophyIcon = '';
                 let bgClass = colorClasses[color];
                 
                 if (index === 0) {
-                    trophyIcon = '<span class="trophy-gold text-xl">🥇</span>';
+                    trophyIcon = '<span class="trophy-gold">🥇</span>';
                     bgClass = 'bg-yellow-100 border-yellow-300 border-2';
                 } else if (index === 1) {
-                    trophyIcon = '<span class="trophy-silver text-xl">🥈</span>';
+                    trophyIcon = '<span class="trophy-silver">🥈</span>';
                     bgClass = 'bg-gray-100 border-gray-300 border-2';
                 } else if (index === 2) {
-                    trophyIcon = '<span class="trophy-bronze text-xl">🥉</span>';
+                    trophyIcon = '<span class="trophy-bronze">🥉</span>';
                     bgClass = 'bg-orange-100 border-orange-300 border-2';
                 }
 
+                const displayValue = displayType === 'score' ? 
+                    `${entry.score} P` : 
+                    formatTime(entry.time);
+
+                const sizeClass = isCompact ? 'p-2' : 'p-3';
+                const textClass = isCompact ? 'text-xs' : '';
+
                 return `
-                    <div class="leaderboard-entry flex justify-between items-center p-3 rounded-lg ${bgClass} border">
-                        <div class="flex items-center gap-3">
+                    <div class="leaderboard-entry flex justify-between items-center ${sizeClass} rounded-lg ${bgClass} border ${textClass}">
+                        <div class="flex items-center gap-2">
                             ${trophyIcon || `<span class="font-bold text-gray-500">#${index + 1}</span>`}
                             <span class="font-medium text-gray-800">${entry.name}</span>
                         </div>
                         <span class="font-mono font-bold text-${color}-600">
-                            ${formatTime(entry.time)}
+                            ${displayValue}
                         </span>
                     </div>
                 `;
@@ -419,11 +508,12 @@
 
         async function updateTotalStats() {
             try {
-                // Alle drei Bestenlisten für Statistiken laden
-                const [dragResponse, crosswordResponse, explanationResponse] = await Promise.all([
+                // Alle vier Bestenlisten für Statistiken laden
+                const [dragResponse, crosswordResponse, explanationResponse, sniperResponse] = await Promise.all([
                     fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/leaderboard.json'),
                     fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json'),
-                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/explanation-leaderboard.json')
+                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/explanation-leaderboard.json'),
+                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/sniper-leaderboard.json')
                 ]);
 
                 let totalPlayers = new Set();
@@ -453,6 +543,15 @@
                         const explanationEntries = Object.values(explanationData);
                         explanationEntries.forEach(entry => totalPlayers.add(entry.name));
                         totalGames += explanationEntries.length;
+                    }
+                }
+
+                if (sniperResponse.ok) {
+                    const sniperData = await sniperResponse.json();
+                    if (sniperData) {
+                        const sniperEntries = Object.values(sniperData);
+                        sniperEntries.forEach(entry => totalPlayers.add(entry.name));
+                        totalGames += sniperEntries.length;
                     }
                 }
 
