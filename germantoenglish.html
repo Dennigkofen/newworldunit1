@@ -84,6 +84,12 @@
             50% { transform: scale(1.1); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
         }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
     </style>
 </head>
 <body class="min-h-screen gradient-bg">
@@ -308,17 +314,26 @@
             germanContainer.innerHTML = '';
             englishContainer.innerHTML = '';
             
+            // Erstelle Map für korrekte Zuordnung
+            const germanToIndex = {};
+            const englishToIndex = {};
+            
+            selectedWords.forEach((pair, index) => {
+                germanToIndex[pair.german] = index;
+                englishToIndex[pair.english] = index;
+            });
+            
             // Deutsche Wörter mischen und erstellen
-            const shuffledGerman = shuffleArray(selectedWords);
-            shuffledGerman.forEach((pair, index) => {
-                const card = createPostIt(pair.german, 'german', index);
+            const shuffledGerman = shuffleArray([...selectedWords]);
+            shuffledGerman.forEach((pair) => {
+                const card = createPostIt(pair.german, 'german', germanToIndex[pair.german]);
                 germanContainer.appendChild(card);
             });
             
             // Englische Wörter mischen und erstellen
-            const shuffledEnglish = shuffleArray(selectedWords);
-            shuffledEnglish.forEach((pair, index) => {
-                const card = createPostIt(pair.english, 'english', index);
+            const shuffledEnglish = shuffleArray([...selectedWords]);
+            shuffledEnglish.forEach((pair) => {
+                const card = createPostIt(pair.english, 'english', englishToIndex[pair.english]);
                 englishContainer.appendChild(card);
             });
         }
@@ -330,14 +345,17 @@
             postIt.draggable = true;
             postIt.dataset.type = type;
             postIt.dataset.pairIndex = pairIndex;
+            postIt.dataset.text = text;
             
             // Drag Events
             postIt.addEventListener('dragstart', handleDragStart);
             postIt.addEventListener('dragend', handleDragEnd);
             
-            // Drop Events
+            // Drop Events (wichtig: alle Post-its können Drop-Ziele sein)
             postIt.addEventListener('dragover', handleDragOver);
             postIt.addEventListener('drop', handleDrop);
+            postIt.addEventListener('dragenter', handleDragEnter);
+            postIt.addEventListener('dragleave', handleDragLeave);
             
             return postIt;
         }
@@ -347,11 +365,31 @@
             draggedElement = e.target;
             e.target.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', ''); // Für bessere Browser-Kompatibilität
         }
 
         function handleDragEnd(e) {
             e.target.classList.remove('dragging');
+            // Alle Drop-Zonen zurücksetzen
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.classList.remove('drag-over');
+            });
             draggedElement = null;
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            if (draggedElement && e.target !== draggedElement) {
+                e.target.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            // Nur entfernen wenn wir wirklich das Element verlassen
+            if (!e.target.contains(e.relatedTarget)) {
+                e.target.classList.remove('drag-over');
+            }
         }
 
         function handleDragOver(e) {
@@ -361,18 +399,30 @@
 
         function handleDrop(e) {
             e.preventDefault();
+            e.target.classList.remove('drag-over');
             
             if (!draggedElement || !gameActive) return;
             
             const dropTarget = e.target;
+            
+            // Verhindere Drop auf sich selbst
+            if (draggedElement === dropTarget) return;
+            
             const draggedType = draggedElement.dataset.type;
             const dropType = dropTarget.dataset.type;
             const draggedIndex = parseInt(draggedElement.dataset.pairIndex);
             const dropIndex = parseInt(dropTarget.dataset.pairIndex);
             
+            console.log('Drop attempt:', {
+                draggedType, dropType, draggedIndex, dropIndex,
+                draggedText: draggedElement.dataset.text,
+                dropText: dropTarget.textContent
+            });
+            
             // Prüfen ob verschiedene Sprachen und gleicher Index
             if (draggedType !== dropType && draggedIndex === dropIndex) {
                 // Erfolgreiche Zuordnung!
+                console.log('Successful match!');
                 matches.push(draggedIndex);
                 
                 // Animationen
@@ -390,6 +440,13 @@
                 if (matches.length === 10) {
                     endGame();
                 }
+            } else {
+                console.log('No match - wrong combination');
+                // Visuelles Feedback für falsche Zuordnung
+                dropTarget.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    dropTarget.style.animation = '';
+                }, 500);
             }
         }
 
