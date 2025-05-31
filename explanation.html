@@ -411,42 +411,44 @@
             `;
         }
 
-        // KI-Bewertung (komplett neu geschrieben)
+        // KI-Bewertung (verbessert und repariert)
         async function evaluateWithAI(word, explanation) {
             try {
                 console.log(`Evaluating "${explanation}" for word "${word}"`);
                 
-                const prompt = `Evaluate this English explanation for the word "${word}":
+                const prompt = `You are evaluating if a student correctly explained the English word "${word}".
 
-Student explanation: "${explanation}"
+Student's answer: "${explanation}"
 
 The student can provide:
-1. Normal explanation: "something you wear on feet"
-2. Synonym: "(S) exercise" or "synonym: exercise" or "synonym to exercise"
-3. Antonym: "(A) bad" or "antonym: bad" or "antonym to bad"
+1. Normal explanation (describe what the word means)
+2. Synonym: starting with "(S)" or "synonym:" 
+3. Antonym: starting with "(A)" or "antonym:"
 
-Respond ONLY with valid JSON in this exact format:
+Examples of CORRECT answers for different words:
+- FRENCH: "language spoken in France" = CORRECT
+- SHOES: "things you wear on feet" = CORRECT  
+- PRACTICE: "(S) exercise" = CORRECT
+- GOOD: "(A) bad" = CORRECT
+
+Respond with valid JSON:
 {
   "correct": true,
   "precise": true,
   "explanation_type": "normal",
   "needs_correction": false,
   "corrected_explanation": "",
-  "feedback": "Perfekt! Richtig erklärt."
+  "feedback": "Richtig erklärt!"
 }
 
 Rules:
-- correct: true if explanation/synonym/antonym is factually right for "${word}"
-- precise: true if specific enough (synonyms/antonyms are automatically precise if correct)
+- correct: Is the explanation factually right for "${word}"? Be GENEROUS with normal explanations.
+- precise: Is it specific enough? Synonyms/antonyms are automatically precise if correct.
 - explanation_type: "normal", "synonym", or "antonym"
-- needs_correction: true ONLY if correct=true AND precise=true BUT has grammar/spelling errors
-- corrected_explanation: ONLY provide if needs_correction=true, otherwise empty string
-- feedback: Brief encouraging German comment (max 30 words)
+- needs_correction: Only true if content is correct but has grammar/spelling errors
+- feedback: Short German encouragement (max 25 words)
 
-For synonyms: Check if the provided word is actually a synonym of "${word}"
-For antonyms: Check if the provided word is actually an antonym of "${word}"
-Be strict with precision for normal explanations.
-JSON only, no other text.`;
+Be generous with "correct" for normal explanations that capture the meaning of "${word}".`
 
                 const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
@@ -458,41 +460,46 @@ JSON only, no other text.`;
                             parts: [{ text: prompt }]
                         }],
                         generationConfig: {
-                            temperature: 0.1,
-                            maxOutputTokens: 250
+                            temperature: 0.2,
+                            maxOutputTokens: 300
                         }
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                    const errorText = await response.text();
+                    console.error('API Error Response:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
 
                 const data = await response.json();
-                console.log('Full API Response:', data);
+                console.log('Full API Response:', JSON.stringify(data, null, 2));
                 
                 if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    console.error('Invalid API response structure:', data);
                     throw new Error('Invalid API response structure');
                 }
 
-                const aiText = data.candidates[0].content.parts[0].text.trim();
-                console.log('AI Response Text:', aiText);
+                let aiText = data.candidates[0].content.parts[0].text.trim();
+                console.log('Raw AI Response:', aiText);
 
-                // JSON extrahieren
-                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+                // Verbessertes JSON-Parsing
+                let jsonMatch = aiText.match(/\{[\s\S]*\}/);
                 if (!jsonMatch) {
-                    throw new Error('No JSON found in AI response');
+                    // Fallback: Versuche alles als JSON zu parsen
+                    try {
+                        const result = JSON.parse(aiText);
+                        console.log('Direct JSON parse successful:', result);
+                        return validateAndReturn(result);
+                    } catch (e) {
+                        console.error('No valid JSON found. AI Response:', aiText);
+                        throw new Error('No valid JSON found in AI response');
+                    }
                 }
 
                 const result = JSON.parse(jsonMatch[0]);
-                console.log('Parsed evaluation:', result);
-
-                // Validierung
-                if (typeof result.correct !== 'boolean' || typeof result.precise !== 'boolean') {
-                    throw new Error('Invalid evaluation format');
-                }
-
-                return result;
+                console.log('Parsed JSON result:', result);
+                return validateAndReturn(result);
 
             } catch (error) {
                 console.error('AI Evaluation failed:', error);
@@ -500,7 +507,33 @@ JSON only, no other text.`;
             }
         }
 
-        // Fallback-Bewertung ohne KI
+        function validateAndReturn(result) {
+            // Validierung und Defaults setzen
+            if (typeof result.correct !== 'boolean') {
+                console.warn('Invalid correct value, defaulting to false');
+                result.correct = false;
+            }
+            if (typeof result.precise !== 'boolean') {
+                console.warn('Invalid precise value, defaulting to false');  
+                result.precise = false;
+            }
+            if (!result.explanation_type) {
+                result.explanation_type = 'normal';
+            }
+            if (!result.feedback) {
+                result.feedback = 'Bewertung erhalten.';
+            }
+            if (typeof result.needs_correction !== 'boolean') {
+                result.needs_correction = false;
+            }
+            if (!result.corrected_explanation) {
+                result.corrected_explanation = '';
+            }
+            
+            return result;
+        }
+
+        // Fallback-Bewertung ohne KI (verbessert)
         function evaluateWithoutAI(word, explanation) {
             const wordLower = word.toLowerCase();
             const expLower = explanation.toLowerCase().trim();
@@ -520,23 +553,23 @@ JSON only, no other text.`;
                 extractedWord = expLower.replace(/^\(a\)|antonym:?|antonym to|^\s*/, '').trim();
             }
             
-            // Einfache Synonym/Antonym-Listen für Fallback
+            // Verbesserte Synonym/Antonym-Listen
             const synonyms = {
-                'practice': ['exercise', 'training', 'rehearsal', 'drill'],
-                'good': ['excellent', 'great', 'fine', 'nice', 'wonderful'],
-                'excited': ['thrilled', 'enthusiastic', 'eager'],
-                'passionate': ['enthusiastic', 'devoted', 'intense'],
-                'proud': ['pleased', 'satisfied', 'content'],
-                'interested': ['curious', 'fascinated', 'engaged'],
-                'exciting': ['thrilling', 'stimulating', 'amazing']
+                'practice': ['exercise', 'training', 'rehearsal', 'drill', 'workout'],
+                'good': ['excellent', 'great', 'fine', 'nice', 'wonderful', 'amazing'],
+                'excited': ['thrilled', 'enthusiastic', 'eager', 'happy'],
+                'passionate': ['enthusiastic', 'devoted', 'intense', 'committed'],
+                'proud': ['pleased', 'satisfied', 'content', 'happy'],
+                'interested': ['curious', 'fascinated', 'engaged', 'keen'],
+                'exciting': ['thrilling', 'stimulating', 'amazing', 'fun']
             };
             
             const antonyms = {
-                'good': ['bad', 'terrible', 'awful', 'poor'],
-                'interested': ['bored', 'uninterested', 'indifferent'],
-                'excited': ['calm', 'bored', 'uninterested'],
-                'proud': ['ashamed', 'embarrassed', 'humble'],
-                'passionate': ['indifferent', 'apathetic', 'unenthusiastic']
+                'good': ['bad', 'terrible', 'awful', 'poor', 'horrible'],
+                'interested': ['bored', 'uninterested', 'indifferent', 'disinterested'],
+                'excited': ['calm', 'bored', 'uninterested', 'relaxed'],
+                'proud': ['ashamed', 'embarrassed', 'humble', 'modest'],
+                'passionate': ['indifferent', 'apathetic', 'unenthusiastic', 'cold']
             };
             
             if (explanationType === 'synonym') {
@@ -565,30 +598,41 @@ JSON only, no other text.`;
                 };
             }
             
-            // Normale Erklärung
+            // Verbesserte normale Erklärung mit mehr Keywords
             const keywords = {
-                'shoes': ['foot', 'feet', 'wear', 'walk'],
-                'watch': ['time', 'wrist', 'clock'],
-                'clothing': ['wear', 'clothes', 'garment'],
-                'school': ['learn', 'education', 'student'],
-                'student': ['learn', 'study', 'school'],
-                'backpack': ['bag', 'carry', 'back'],
-                'belt': ['waist', 'around', 'wear'],
-                'sunglasses': ['sun', 'eyes', 'dark', 'bright']
+                'french': ['language', 'france', 'speak', 'spoken', 'country'],
+                'shoes': ['foot', 'feet', 'wear', 'walk', 'footwear'],
+                'watch': ['time', 'wrist', 'clock', 'hour', 'minute'],
+                'clothing': ['wear', 'clothes', 'garment', 'dress', 'outfit'],
+                'school': ['learn', 'education', 'student', 'teach', 'study'],
+                'student': ['learn', 'study', 'school', 'education', 'pupil'],
+                'backpack': ['bag', 'carry', 'back', 'school', 'pack'],
+                'belt': ['waist', 'around', 'wear', 'leather', 'buckle'],
+                'sunglasses': ['sun', 'eyes', 'dark', 'bright', 'glasses'],
+                'geography': ['earth', 'countries', 'maps', 'world', 'places'],
+                'maths': ['numbers', 'calculate', 'mathematics', 'math', 'counting'],
+                'science': ['experiment', 'research', 'study', 'nature', 'laboratory'],
+                'history': ['past', 'events', 'ancient', 'time', 'historical'],
+                'art': ['paint', 'draw', 'create', 'picture', 'creative'],
+                'playground': ['play', 'children', 'school', 'outside', 'games']
             };
             
             const wordKeywords = keywords[wordLower] || [];
             const hasKeyword = wordKeywords.some(kw => expLower.includes(kw));
-            const isLongEnough = explanation.length >= 8;
-            const hasMultipleWords = explanation.split(' ').length >= 3;
+            const isLongEnough = explanation.length >= 6; // Weniger streng
+            const hasMultipleWords = explanation.split(' ').length >= 2; // Weniger streng
+            
+            // Großzügigere Bewertung
+            const isCorrect = hasKeyword || (isLongEnough && hasMultipleWords);
+            const isPrecise = hasKeyword && hasMultipleWords;
             
             return {
-                correct: hasKeyword || isLongEnough,
-                precise: hasMultipleWords && isLongEnough && hasKeyword,
+                correct: isCorrect,
+                precise: isPrecise,
                 explanation_type: 'normal',
                 needs_correction: false,
                 corrected_explanation: "",
-                feedback: hasKeyword && hasMultipleWords ? "Gut! Das scheint zu passen." : "Hmm, versuche es nochmal spezifischer."
+                feedback: isCorrect ? (isPrecise ? "Gut erklärt!" : "Richtig, aber könnte spezifischer sein.") : "Versuche es nochmal anders."
             };
         }
 
