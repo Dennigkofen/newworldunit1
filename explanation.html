@@ -413,16 +413,19 @@ Respond ONLY with valid JSON in this exact format:
 {
   "correct": true,
   "precise": true,
-  "corrected_explanation": "${explanation}",
-  "feedback": "Sehr gut! Deine Erklärung ist korrekt und präzise."
+  "needs_correction": false,
+  "corrected_explanation": "",
+  "feedback": "Perfekt! Richtig und präzise erklärt."
 }
 
 Rules:
 - correct: true if explanation is factually right for "${word}"
-- precise: true if specific enough (not too general)
-- corrected_explanation: fix spelling/grammar but keep meaning
-- feedback: encouraging German comment (max 50 words)
+- precise: true if specific enough (not too general like "something you wear" for shoes)
+- needs_correction: true ONLY if correct=true AND precise=true BUT has grammar/spelling errors
+- corrected_explanation: ONLY provide if needs_correction=true, otherwise empty string
+- feedback: Brief encouraging German comment (max 30 words)
 
+Be strict with precision. General explanations should get precise=false.
 JSON only, no other text.`;
 
                 const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -502,9 +505,10 @@ JSON only, no other text.`;
             
             return {
                 correct: hasKeyword || isLongEnough,
-                precise: hasMultipleWords && isLongEnough,
-                corrected_explanation: explanation,
-                feedback: hasKeyword ? "Gut! Das Wort passt zur Beschreibung." : "Okay, aber versuche spezifischer zu sein."
+                precise: hasMultipleWords && isLongEnough && hasKeyword,
+                needs_correction: false,
+                corrected_explanation: "",
+                feedback: hasKeyword ? "Gut! Das scheint zu passen." : "Hmm, versuche es nochmal anders."
             };
         }
 
@@ -538,7 +542,13 @@ JSON only, no other text.`;
                     markWordCompleted();
                     setTimeout(() => {
                         nextWord();
-                    }, 2000);
+                    }, 2500); // Etwas länger Zeit zum Lesen
+                } else {
+                    // Bei falscher Antwort: Feld leeren für neuen Versuch
+                    setTimeout(() => {
+                        document.getElementById('explanationInput').value = '';
+                        document.getElementById('explanationInput').focus();
+                    }, 1000);
                 }
                 
             } catch (error) {
@@ -560,11 +570,21 @@ JSON only, no other text.`;
             if (!evaluation.correct) {
                 feedbackClass = 'feedback-incorrect';
                 icon = '❌';
-                title = 'Nicht ganz richtig';
+                title = 'Nicht richtig';
             } else if (!evaluation.precise) {
                 feedbackClass = 'feedback-imprecise';
                 icon = '⚠️';
                 title = 'Zu ungenau';
+            }
+            
+            let correctionHtml = '';
+            if (evaluation.needs_correction && evaluation.corrected_explanation) {
+                correctionHtml = `
+                    <div class="p-3 bg-blue-50 rounded-lg">
+                        <div class="font-medium text-blue-700 mb-1">📝 Sprachliche Korrektur:</div>
+                        <div class="text-blue-600">${evaluation.corrected_explanation}</div>
+                    </div>
+                `;
             }
             
             feedbackArea.innerHTML = `
@@ -580,24 +600,27 @@ JSON only, no other text.`;
                     <div class="p-3 bg-gray-100 rounded-lg">
                         <div class="font-medium text-gray-700 mb-1">✅ Richtigkeit:</div>
                         <div class="${evaluation.correct ? 'text-green-600' : 'text-red-600'}">
-                            ${evaluation.correct ? 'Korrekt' : 'Nicht korrekt'}
+                            ${evaluation.correct ? 'Richtig' : 'Falsch - versuche es nochmal!'}
                         </div>
                     </div>
                     
                     <div class="p-3 bg-gray-100 rounded-lg">
                         <div class="font-medium text-gray-700 mb-1">🎯 Präzision:</div>
                         <div class="${evaluation.precise ? 'text-green-600' : 'text-orange-600'}">
-                            ${evaluation.precise ? 'Präzise genug' : 'Zu ungenau - sei spezifischer'}
+                            ${evaluation.precise ? 'Präzise genug' : 'Zu allgemein - sei spezifischer!'}
                         </div>
                     </div>
                     
-                    ${originalExplanation !== evaluation.corrected_explanation ? `
-                    <div class="p-3 bg-blue-50 rounded-lg">
-                        <div class="font-medium text-blue-700 mb-1">📝 Korrektur:</div>
-                        <div class="text-blue-600">${evaluation.corrected_explanation}</div>
-                    </div>
-                    ` : ''}
+                    ${correctionHtml}
                 </div>
+                
+                ${!evaluation.correct || !evaluation.precise ? `
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="text-yellow-800 text-sm">
+                        💡 <strong>Tipp:</strong> ${!evaluation.correct ? 'Überdenke, was das Wort wirklich bedeutet.' : 'Füge mehr Details hinzu, um spezifischer zu werden.'}
+                    </div>
+                </div>
+                ` : ''}
             `;
         }
 
