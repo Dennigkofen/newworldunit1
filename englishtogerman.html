@@ -17,46 +17,47 @@
         
         .flying-word {
             position: absolute;
-            padding: 8px 16px;
+            padding: 12px 20px;
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s ease;
-            animation: flyAcross 8s linear;
+            transition: all 0.3s ease;
+            animation: flyAcross 20s linear; /* VIEL langsamer: 20s statt 8s */
             z-index: 10;
+            font-size: 18px;
         }
         
         .flying-word:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+            transform: scale(1.15);
+            box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
         }
         
         .flying-word.clicked {
             animation: none;
-            transform: scale(1.2);
-            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.6);
+            transform: scale(1.3);
+            box-shadow: 0 10px 35px rgba(16, 185, 129, 0.7);
         }
         
         @keyframes flyAcross {
             from {
-                left: -200px;
+                left: -250px;
             }
             to {
-                left: calc(100vw + 200px);
+                left: calc(100vw + 250px);
             }
         }
         
         .power-up {
             position: absolute;
-            padding: 6px 12px;
+            padding: 8px 16px;
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
             border-radius: 12px;
             font-weight: bold;
             cursor: pointer;
-            animation: flyAcross 6s linear;
+            animation: flyAcross 15s linear; /* Auch langsamer */
             z-index: 15;
         }
         
@@ -78,9 +79,9 @@
             position: absolute;
             color: #10b981;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 20px;
             pointer-events: none;
-            animation: scorePopup 1s ease-out forwards;
+            animation: scorePopup 1.5s ease-out forwards;
             z-index: 20;
         }
         
@@ -90,7 +91,7 @@
                 opacity: 1; 
             }
             100% { 
-                transform: translateY(-50px) scale(1.2); 
+                transform: translateY(-60px) scale(1.3); 
                 opacity: 0; 
             }
         }
@@ -118,7 +119,7 @@
         }
         
         .slow-motion {
-            animation-duration: 16s !important;
+            animation-duration: 40s !important; /* Noch langsamer im Slow Motion */
         }
         
         .input-field {
@@ -144,7 +145,7 @@
                     🎯 Wort-Sniper
                 </h1>
             </div>
-            <p class="text-white/90 text-lg">Schieße die fliegenden Wörter ab und übersetze sie ins Deutsche!</p>
+            <p class="text-white/90 text-lg">Klicke auf die langsam fliegenden Wörter und übersetze sie ins Deutsche!</p>
         </div>
 
         <!-- Game Stats -->
@@ -172,7 +173,7 @@
             
             <div class="game-card px-4 py-2 rounded-lg shadow-lg">
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-purple-600" id="timer">60</div>
+                    <div class="text-2xl font-bold text-purple-600" id="timer">90</div>
                     <div class="text-sm text-gray-600">Zeit</div>
                 </div>
             </div>
@@ -195,7 +196,7 @@
         <!-- Game Area -->
         <div id="gameArea" class="game-area game-card shadow-lg mb-6 hidden">
             <div class="absolute inset-0 flex items-center justify-center text-white/50 text-xl font-bold pointer-events-none">
-                Klicke auf die fliegenden Wörter!
+                Klicke auf die fliegenden Wörter! ✨
             </div>
         </div>
 
@@ -292,7 +293,7 @@
         let lives = 3;
         let combo = 0;
         let maxCombo = 0;
-        let timeLeft = 60;
+        let timeLeft = 90; // Mehr Zeit: 90 Sekunden statt 60
         let currentTargetWord = null;
         let gameInterval = null;
         let timerInterval = null;
@@ -312,7 +313,7 @@
         function getRandomPosition() {
             const gameArea = document.getElementById('gameArea');
             const rect = gameArea.getBoundingClientRect();
-            return Math.random() * (rect.height - 100) + 50;
+            return Math.random() * (rect.height - 120) + 60; // Mehr Abstand von Rändern
         }
 
         function updateDisplay() {
@@ -331,8 +332,10 @@
             document.body.appendChild(popup);
             
             setTimeout(() => {
-                document.body.removeChild(popup);
-            }, 1000);
+                if (popup.parentNode) {
+                    document.body.removeChild(popup);
+                }
+            }, 1500);
         }
 
         // Navigation
@@ -347,7 +350,7 @@
             lives = 3;
             combo = 0;
             maxCombo = 0;
-            timeLeft = 60;
+            timeLeft = 90; // 90 Sekunden
             currentTargetWord = null;
             
             document.getElementById('gameArea').classList.remove('hidden');
@@ -366,13 +369,13 @@
                 }
             }, 1000);
             
-            // Wörter spawnen
+            // Wörter spawnen - VIEL seltener
             spawnWords();
-            wordSpawnInterval = setInterval(spawnWords, 2000);
+            wordSpawnInterval = setInterval(spawnWords, 4000); // 4 Sekunden statt 2
             
-            // Gelegentliche Power-Ups
-            setTimeout(spawnPowerUp, 10000);
-            setInterval(spawnPowerUp, 15000);
+            // Power-Ups noch seltener
+            setTimeout(spawnPowerUp, 20000); // Nach 20 Sekunden
+            setInterval(spawnPowerUp, 25000); // Alle 25 Sekunden
         }
 
         function spawnWords() {
@@ -392,7 +395,8 @@
             
             document.getElementById('gameArea').appendChild(wordElement);
             
-            // Entferne Wort nach Animation
+            // Entferne Wort nach Animation - angepasste Zeit
+            const duration = powerUps.slowMotion ? 40000 : 20000;
             setTimeout(() => {
                 if (wordElement.parentNode && !wordElement.classList.contains('clicked')) {
                     wordElement.parentNode.removeChild(wordElement);
@@ -400,7 +404,7 @@
                         loseLife();
                     }
                 }
-            }, powerUps.slowMotion ? 16000 : 8000);
+            }, duration);
         }
 
         function spawnPowerUp() {
@@ -422,7 +426,7 @@
                 if (powerUpElement.parentNode) {
                     powerUpElement.parentNode.removeChild(powerUpElement);
                 }
-            }, 6000);
+            }, 15000); // Power-Ups bleiben länger sichtbar
         }
 
         function activatePowerUp(type, element) {
@@ -430,18 +434,18 @@
             
             if (type.includes('Slow Motion')) {
                 powerUps.slowMotion = true;
-                document.getElementById('powerUpText').textContent = 'Slow Motion (10s)';
+                document.getElementById('powerUpText').textContent = 'Slow Motion (15s)';
                 setTimeout(() => {
                     powerUps.slowMotion = false;
                     document.getElementById('powerUpText').textContent = 'Kein Power-Up';
-                }, 10000);
+                }, 15000); // Länger aktiv
             } else if (type.includes('Double Points')) {
                 powerUps.doublePoints = true;
-                document.getElementById('powerUpText').textContent = 'Double Points (15s)';
+                document.getElementById('powerUpText').textContent = 'Double Points (20s)';
                 setTimeout(() => {
                     powerUps.doublePoints = false;
                     document.getElementById('powerUpText').textContent = 'Kein Power-Up';
-                }, 15000);
+                }, 20000); // Länger aktiv
             } else if (type.includes('Skip Word')) {
                 if (currentTargetWord) {
                     skipCurrentWord();
@@ -463,7 +467,7 @@
                 if (wordElement.parentNode) {
                     wordElement.parentNode.removeChild(wordElement);
                 }
-            }, 200);
+            }, 300);
         }
 
         function submitTranslation() {
@@ -476,7 +480,7 @@
                 combo++;
                 maxCombo = Math.max(maxCombo, combo);
                 
-                let points = 10 + (combo * 2);
+                let points = 15 + (combo * 3); // Mehr Basispunkte
                 if (powerUps.doublePoints) {
                     points *= 2;
                 }
