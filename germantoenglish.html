@@ -1,0 +1,386 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Clock, Trophy, RotateCcw, Star } from 'lucide-react';
+
+const WordMatchingGame = () => {
+  const wordPairs = [
+    { german: 'Kleidung', english: 'Clothing' },
+    { german: 'Pullover', english: 'Jumper' },
+    { german: 'Schuhe', english: 'Shoes' },
+    { german: 'Hose', english: 'Trousers / Pants' },
+    { german: 'Bluse', english: 'Blouse' },
+    { german: 'Mütze', english: 'Cap' },
+    { german: 'Gürtel', english: 'Belt' },
+    { german: 'Uhr', english: 'Watch' },
+    { german: 'Schüler', english: 'Student' },
+    { german: 'Sonnenbrille', english: 'Sunglasses' },
+    { german: 'Rucksack', english: 'Backpack' },
+    { german: 'Schulhof', english: 'School playground' },
+    { german: 'In der Schule', english: 'At school' },
+    { german: 'Interessiert', english: 'Interested' },
+    { german: 'Gut', english: 'Good' },
+    { german: 'Lieblings-', english: 'Favourite / Favorite' },
+    { german: 'Fach', english: 'Subject' },
+    { german: 'Mathematik', english: 'Maths' },
+    { german: 'Naturwissenschaft', english: 'Science' },
+    { german: 'Geschichte', english: 'History' },
+    { german: 'Kunst', english: 'Art' },
+    { german: 'Französisch', english: 'French' },
+    { german: 'Geografie', english: 'Geography' },
+    { german: 'auch', english: 'also' },
+    { german: 'Leidenschaft', english: 'Passion' },
+    { german: 'Üben', english: 'Practice' },
+    { german: 'Anstrengung', english: 'Effort' },
+    { german: 'Stolz', english: 'Proud' },
+    { german: 'Verbringen', english: 'Spend' },
+    { german: 'Jeden Tag', english: 'Every day' },
+    { german: 'Am Wochenende', english: 'At the weekend' },
+    { german: 'Viel', english: 'A lot of' },
+    { german: 'Fühlen', english: 'Feel' },
+    { german: 'Schmuck', english: 'Jewellery' },
+    { german: 'Aufregend', english: 'Exciting' },
+    { german: 'Leidenschaftlich', english: 'Passionate' },
+    { german: 'Erfinder', english: 'Inventor' },
+    { german: 'Problem lösen', english: 'Solve a Problem' },
+    { german: 'Erfindung', english: 'Invention' }
+  ];
+
+  const [selectedWords, setSelectedWords] = useState([]);
+  const [germanCards, setGermanCards] = useState([]);
+  const [englishCards, setEnglishCards] = useState([]);
+  const [draggedCard, setDraggedCard] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameFinished, setGameFinished] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [playerName, setPlayerName] = useState('');
+  const [showNameInput, setShowNameInput] = useState(false);
+
+  const shuffleArray = (array) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  const startNewGame = useCallback(() => {
+    const shuffled = shuffleArray(wordPairs);
+    const selected = shuffled.slice(0, 10);
+    setSelectedWords(selected);
+    
+    const shuffledGerman = shuffleArray(selected.map((pair, index) => ({
+      id: `german-${index}`,
+      text: pair.german,
+      pairIndex: index,
+      type: 'german'
+    })));
+    
+    const shuffledEnglish = shuffleArray(selected.map((pair, index) => ({
+      id: `english-${index}`,
+      text: pair.english,
+      pairIndex: index,
+      type: 'english'
+    })));
+    
+    setGermanCards(shuffledGerman);
+    setEnglishCards(shuffledEnglish);
+    setMatches([]);
+    setStartTime(Date.now());
+    setEndTime(null);
+    setGameStarted(true);
+    setGameFinished(false);
+    setShowNameInput(false);
+  }, []);
+
+  const loadLeaderboard = async () => {
+    try {
+      const response = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/leaderboard.json');
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          const leaderboardArray = Object.values(data).sort((a, b) => a.time - b.time).slice(0, 10);
+          setLeaderboard(leaderboardArray);
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Bestenliste:', error);
+    }
+  };
+
+  const saveScore = async (name, time) => {
+    try {
+      const score = {
+        name: name,
+        time: time,
+        timestamp: Date.now()
+      };
+      
+      await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/leaderboard.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(score)
+      });
+      
+      loadLeaderboard();
+    } catch (error) {
+      console.error('Fehler beim Speichern der Punktzahl:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
+
+  useEffect(() => {
+    if (matches.length === 10 && selectedWords.length === 10 && !gameFinished) {
+      const end = Date.now();
+      setEndTime(end);
+      setGameFinished(true);
+      setShowNameInput(true);
+    }
+  }, [matches, selectedWords, gameFinished]);
+
+  const handleDragStart = (e, card) => {
+    setDraggedCard(card);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', ''); // Für bessere Browser-Kompatibilität
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetCard) => {
+    e.preventDefault();
+    
+    if (!draggedCard || draggedCard.type === targetCard.type) {
+      setDraggedCard(null);
+      return;
+    }
+
+    if (draggedCard.pairIndex === targetCard.pairIndex) {
+      setMatches(prev => [...prev, draggedCard.pairIndex]);
+      setGermanCards(prev => prev.filter(card => card.pairIndex !== draggedCard.pairIndex));
+      setEnglishCards(prev => prev.filter(card => card.pairIndex !== targetCard.pairIndex));
+    }
+    
+    setDraggedCard(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedCard(null);
+  };
+
+  const formatTime = (milliseconds) => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const ms = milliseconds % 1000;
+    return `${seconds}.${Math.floor(ms / 10).toString().padStart(2, '0')}s`;
+  };
+
+  const handleSubmitScore = async () => {
+    if (playerName.trim() && endTime && startTime) {
+      const finalTime = endTime - startTime;
+      await saveScore(playerName.trim(), finalTime);
+      setShowNameInput(false);
+    }
+  };
+
+  const PostItCard = ({ card, onDragStart, onDrop, onDragOver, onDragEnd, isDragging }) => (
+    <div
+      draggable={true}
+      onDragStart={(e) => onDragStart(e, card)}
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e, card)}
+      onDragEnd={onDragEnd}
+      className={`
+        p-4 m-2 min-h-16 w-40 cursor-move select-none transform transition-all duration-200
+        ${card.type === 'german' 
+          ? 'bg-yellow-200 border-yellow-300 shadow-yellow-400/50' 
+          : 'bg-blue-200 border-blue-300 shadow-blue-400/50'
+        }
+        border-2 rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-1
+        flex items-center justify-center text-center font-medium
+        ${isDragging ? 'opacity-50 rotate-5 scale-95' : 'hover:rotate-1 active:scale-95'}
+        touch-none
+      `}
+      style={{ 
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none'
+      }}
+    >
+      <span className="text-sm leading-tight pointer-events-none">{card.text}</span>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+            <Star className="text-yellow-500" />
+            Deutsch-Englisch Wortspiel
+            <Star className="text-yellow-500" />
+          </h1>
+          <p className="text-gray-600">Verbinde die deutschen und englischen Wörter miteinander!</p>
+        </div>
+
+        {/* Game Controls */}
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <button
+            onClick={startNewGame}
+            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            <RotateCcw size={20} />
+            {gameStarted ? 'Neues Spiel' : 'Spiel starten'}
+          </button>
+          
+          {gameStarted && (
+            <div className="bg-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
+              <Clock size={20} className="text-gray-600" />
+              <span className="font-mono text-lg">
+                {startTime && !endTime && formatTime(Date.now() - startTime)}
+                {endTime && formatTime(endTime - startTime)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Game Area */}
+        {gameStarted && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* German Words */}
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">Deutsch</h3>
+                <div className="flex flex-wrap justify-center min-h-80">
+                  {germanCards.map((card) => (
+                    <PostItCard
+                      key={card.id}
+                      card={card}
+                      onDragStart={handleDragStart}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragEnd={handleDragEnd}
+                      isDragging={draggedCard?.id === card.id}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* English Words */}
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">English</h3>
+                <div className="flex flex-wrap justify-center min-h-80">
+                  {englishCards.map((card) => (
+                    <PostItCard
+                      key={card.id}
+                      card={card}
+                      onDragStart={handleDragStart}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragEnd={handleDragEnd}
+                      isDragging={draggedCard?.id === card.id}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Progress */}
+            <div className="mt-6 text-center">
+              <div className="bg-gray-200 rounded-full h-4 max-w-md mx-auto">
+                <div 
+                  className="bg-green-500 h-4 rounded-full transition-all duration-300"
+                  style={{ width: `${(matches.length / 10) * 100}%` }}
+                ></div>
+              </div>
+              <p className="mt-2 text-gray-600">
+                {matches.length} von 10 Paaren gefunden
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Name Input for Leaderboard */}
+        {showNameInput && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4">
+              <h3 className="text-2xl font-bold text-green-600 mb-4 text-center">
+                🎉 Glückwunsch! 🎉
+              </h3>
+              <p className="text-center text-gray-600 mb-4">
+                Du hast das Spiel in {formatTime(endTime - startTime)} abgeschlossen!
+              </p>
+              <input
+                type="text"
+                placeholder="Dein Name für die Bestenliste"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+                maxLength={20}
+              />
+              <button
+                onClick={handleSubmitScore}
+                disabled={!playerName.trim()}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors"
+              >
+                Punktzahl speichern
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Leaderboard */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 flex items-center justify-center gap-2">
+            <Trophy className="text-yellow-500" />
+            Top 10 Bestenliste
+          </h2>
+          {leaderboard.length > 0 ? (
+            <div className="space-y-2">
+              {leaderboard.map((entry, index) => (
+                <div 
+                  key={index}
+                  className={`flex justify-between items-center p-3 rounded-lg ${
+                    index === 0 ? 'bg-yellow-100 border-2 border-yellow-300' :
+                    index === 1 ? 'bg-gray-100 border-2 border-gray-300' :
+                    index === 2 ? 'bg-orange-100 border-2 border-orange-300' :
+                    'bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`font-bold text-lg ${
+                      index === 0 ? 'text-yellow-600' :
+                      index === 1 ? 'text-gray-600' :
+                      index === 2 ? 'text-orange-600' :
+                      'text-gray-500'
+                    }`}>
+                      #{index + 1}
+                    </span>
+                    <span className="font-medium">{entry.name}</span>
+                  </div>
+                  <span className="font-mono text-lg font-bold text-green-600">
+                    {formatTime(entry.time)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">Noch keine Einträge vorhanden</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default WordMatchingGame;
