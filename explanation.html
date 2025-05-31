@@ -386,34 +386,100 @@ Be encouraging and constructive. Minor spelling errors should not affect correct
                             parts: [{
                                 text: prompt
                             }]
-                        }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.3,
+                            topK: 1,
+                            topP: 1,
+                            maxOutputTokens: 1024,
+                        },
+                        safetySettings: [
+                            {
+                                category: "HARM_CATEGORY_HARASSMENT",
+                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                            },
+                            {
+                                category: "HARM_CATEGORY_HATE_SPEECH",
+                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                            },
+                            {
+                                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                            },
+                            {
+                                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                            }
+                        ]
                     })
                 });
 
+                console.log('Response status:', response.status);
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('API Error:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                 }
 
                 const data = await response.json();
+                console.log('API Response:', data);
+                
+                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                    throw new Error('Invalid response structure from API');
+                }
+                
                 const aiResponse = data.candidates[0].content.parts[0].text;
+                console.log('AI Response Text:', aiResponse);
                 
                 // Parse JSON response
                 const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
+                    const parsed = JSON.parse(jsonMatch[0]);
+                    console.log('Parsed JSON:', parsed);
+                    return parsed;
                 } else {
+                    console.error('No JSON found in response:', aiResponse);
                     throw new Error('Invalid JSON response from AI');
                 }
             } catch (error) {
                 console.error('AI evaluation error:', error);
-                // Fallback response
+                
+                // Bessere Fallback-Logik basierend auf einfachen Regeln
+                const isCorrect = checkBasicCorrectness(word, explanation);
+                const isPrecise = explanation.length > 10 && explanation.includes(' '); // Mindestens zwei Wörter
+                
                 return {
-                    correct: true,
-                    precise: true,
+                    correct: isCorrect,
+                    precise: isPrecise,
                     corrected_explanation: explanation,
-                    feedback: "Entschuldigung, die KI-Bewertung ist momentan nicht verfügbar. Deine Antwort wird als korrekt gewertet."
+                    feedback: `Die KI-Bewertung ist momentan nicht verfügbar. Basierend auf einfachen Regeln: ${isCorrect && isPrecise ? 'Deine Erklärung sieht gut aus!' : isCorrect ? 'Korrekt, aber versuche spezifischer zu sein.' : 'Versuche eine genauere Erklärung.'}`
                 };
             }
+        }
+
+        // Einfache Backup-Bewertung falls API nicht funktioniert
+        function checkBasicCorrectness(word, explanation) {
+            const wordLower = word.toLowerCase();
+            const explanationLower = explanation.toLowerCase();
+            
+            // Einfache Keyword-basierte Prüfung
+            const keywordMap = {
+                'shoes': ['foot', 'feet', 'wear', 'walk'],
+                'watch': ['time', 'wrist', 'clock', 'hour'],
+                'clothing': ['wear', 'clothes', 'garment'],
+                'school': ['learn', 'student', 'education', 'teach'],
+                'student': ['learn', 'school', 'study', 'education'],
+                'backpack': ['bag', 'carry', 'back', 'school'],
+                'belt': ['waist', 'around', 'wear', 'leather'],
+                'cap': ['head', 'hat', 'wear'],
+                'sunglasses': ['eyes', 'sun', 'dark', 'bright'],
+                'jumper': ['wear', 'warm', 'sweater', 'pull'],
+                'blouse': ['shirt', 'woman', 'wear', 'top']
+            };
+            
+            const keywords = keywordMap[wordLower] || [];
+            return keywords.some(keyword => explanationLower.includes(keyword)) || explanation.length > 5;
         }
 
         async function submitExplanation() {
