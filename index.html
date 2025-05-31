@@ -10,8 +10,7 @@
             transition: all 0.3s ease;
             background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
             backdrop-filter: blur(10px);
-            // Gesamtstatistiken berechnen
-            updateTotalStats();
+        }
         
         .game-card:hover {
             transform: translateY(-10px) scale(1.02);
@@ -79,52 +78,10 @@
                 Verbessere dein Englisch mit unseren interaktiven Spielen! 
                 Sammle Punkte, vergleiche deine Zeiten und werde zum Champion!
             </p>
-            <!-- Memory Flip Game -->
-            <div class="game-card rounded-2xl p-6 border border-white/20 shadow-2xl">
-                <div class="text-center mb-4">
-                    <div class="text-5xl mb-3 icon-bounce">🧠</div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Memory Flip</h2>
-                    <p class="text-gray-600 text-sm">Finde die passenden Deutsch-Englisch Wortpaare!</p>
-                    <!-- Complete Memory Leaderboard -->
-                <div>
-                    <h3 class="text-xl font-bold text-pink-600 mb-4 text-center">
-                        🧠 Memory Flip Champions
-                    </h3>
-                    <div id="full-memory-leaderboard" class="space-y-2">
-                        <!-- Wird per JavaScript geladen -->
-                    </div>
-                </div>
-            </div>
-                
-                <div class="space-y-2 mb-4 text-xs text-gray-700">
-                    <div class="flex justify-between">
-                        <span>🧠 3 Schwierigkeitsgrade</span>
-                        <span>🃏 Kartenflip-Animation</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>⏱️ Zeit & Züge</span>
-                        <span>🎯 8-20 Wortpaare</span>
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <h3 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                        🏆 Top 3
-                        <div id="memory-loading" class="loading-spinner ml-2 scale-50 hidden"></div>
-                    </h3>
-                    <div id="memory-leaderboard" class="space-y-1 text-xs">
-                        <!-- Wird per JavaScript geladen -->
-                    </div>
-                </div>
-                
-                <button onclick="playMemoryGame()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
-                    🧠 Jetzt spielen!
-                </button>
-            </div>
         </div>
 
         <!-- Games Section -->
-        <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <!-- Drag & Drop Game -->
             <div class="game-card rounded-2xl p-6 border border-white/20 shadow-2xl">
                 <div class="text-center mb-4">
@@ -273,7 +230,7 @@
                 <p class="text-gray-600">Die besten Spieler aller Zeiten</p>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Complete Drag & Drop Leaderboard -->
                 <div>
                     <h3 class="text-xl font-bold text-green-600 mb-4 text-center">
@@ -368,10 +325,6 @@
 
         function playSniperGame() {
             window.location.href = 'englishtogerman.html';
-        }
-
-        function playMemoryGame() {
-            window.location.href = 'memory.html';
         }
 
         // Zeit-Formatierung
@@ -496,28 +449,8 @@
                 document.getElementById('sniper-loading').classList.add('hidden');
             }
 
-            // Memory Flip Bestenliste laden
-            try {
-                document.getElementById('memory-loading').classList.remove('hidden');
-                const memoryResponse = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/memory-leaderboard.json');
-                if (memoryResponse.ok) {
-                    const memoryData = await memoryResponse.json();
-                    if (memoryData) {
-                        const memoryLeaderboard = Object.values(memoryData)
-                            .sort((a, b) => a.time - b.time)
-                            .slice(0, 10);
-                        
-                        // Top 3 für Game Card
-                        displayLeaderboard('memory-leaderboard', memoryLeaderboard.slice(0, 3), 'pink', 'time');
-                        // Komplette Top 10 für Hall of Fame
-                        displayLeaderboard('full-memory-leaderboard', memoryLeaderboard, 'pink', 'time');
-                    }
-                }
-                document.getElementById('memory-loading').classList.add('hidden');
-            } catch (error) {
-                console.error('Fehler beim Laden der Memory Bestenliste:', error);
-                document.getElementById('memory-loading').classList.add('hidden');
-            }
+            // Gesamtstatistiken berechnen
+            updateTotalStats();
         }
 
         function displayLeaderboard(elementId, leaderboard, color, displayType) {
@@ -532,8 +465,7 @@
                 green: 'border-green-200 bg-green-50',
                 purple: 'border-purple-200 bg-purple-50',
                 indigo: 'border-indigo-200 bg-indigo-50',
-                red: 'border-red-200 bg-red-50',
-                pink: 'border-pink-200 bg-pink-50'
+                red: 'border-red-200 bg-red-50'
             };
 
             const isCompact = elementId.includes('-leaderboard') && !elementId.includes('full-');
@@ -576,13 +508,12 @@
 
         async function updateTotalStats() {
             try {
-                // Alle fünf Bestenlisten für Statistiken laden
-                const [dragResponse, crosswordResponse, explanationResponse, sniperResponse, memoryResponse] = await Promise.all([
+                // Alle vier Bestenlisten für Statistiken laden
+                const [dragResponse, crosswordResponse, explanationResponse, sniperResponse] = await Promise.all([
                     fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/leaderboard.json'),
                     fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json'),
                     fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/explanation-leaderboard.json'),
-                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/sniper-leaderboard.json'),
-                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/memory-leaderboard.json')
+                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/sniper-leaderboard.json')
                 ]);
 
                 let totalPlayers = new Set();
@@ -621,15 +552,6 @@
                         const sniperEntries = Object.values(sniperData);
                         sniperEntries.forEach(entry => totalPlayers.add(entry.name));
                         totalGames += sniperEntries.length;
-                    }
-                }
-
-                if (memoryResponse.ok) {
-                    const memoryData = await memoryResponse.json();
-                    if (memoryData) {
-                        const memoryEntries = Object.values(memoryData);
-                        memoryEntries.forEach(entry => totalPlayers.add(entry.name));
-                        totalGames += memoryEntries.length;
                     }
                 }
 
