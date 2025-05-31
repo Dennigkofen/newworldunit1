@@ -473,9 +473,20 @@
             wordElement.classList.add('clicked');
             currentTargetWord = wordElement.dataset.word;
             
+            // Übersetzungsbereich anzeigen und Input zurücksetzen
+            const translationArea = document.getElementById('translationArea');
+            const input = document.getElementById('translationInput');
+            
             document.getElementById('currentWord').textContent = currentTargetWord;
-            document.getElementById('translationArea').classList.remove('hidden');
-            document.getElementById('translationInput').focus();
+            translationArea.classList.remove('hidden');
+            
+            // Input explizit leeren und fokussieren
+            input.value = '';
+            setTimeout(() => {
+                input.focus();
+            }, 100);
+            
+            console.log('Neues Wort ausgewählt:', currentTargetWord);
             
             setTimeout(() => {
                 if (wordElement.parentNode) {
@@ -517,17 +528,23 @@
                     document.querySelector('.combo-display').classList.remove('combo-display');
                 }, 500);
                 
-                // Eingabefeld sofort leeren und Übersetzungsbereich ausblenden
+                // SOFORT nach richtiger Antwort: Alles zurücksetzen
                 input.value = '';
                 document.getElementById('translationArea').classList.add('hidden');
                 currentTargetWord = null;
+                
+                console.log('Richtige Antwort - Feld geleert und versteckt');
+                
             } else {
                 // Falsche Antwort
                 combo = 0;
                 loseLife();
                 
-                // Bei falscher Antwort: Feld für neuen Versuch leeren, aber Bereich offen lassen
+                // Bei falscher Antwort: Nur Feld leeren, Bereich offen lassen
                 input.value = '';
+                input.focus(); // Fokus wieder auf Input setzen
+                
+                console.log('Falsche Antwort - Feld geleert, bleibt offen');
             }
             
             updateDisplay();
