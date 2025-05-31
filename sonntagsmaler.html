@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wort-Maler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .game-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            backdrop-filter: blur(10px);
+        }
+        
+        .drawing-canvas {
+            background: white;
+            border: 3px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .drawing-path {
+            stroke: #3b82f6;
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+        }
+        
+        .draw-animation {
+            animation: drawPath 3s ease-out forwards;
+        }
+        
+        @keyframes drawPath {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+        
+        .guess-input {
+            border: 3px solid #3b82f6;
+            transition: all 0.3s ease;
+        }
+        
+        .guess-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .score-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: #10b981;
+            animation: scorePopup 1.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 30;
+        }
+        
+        @keyframes scorePopup {
+            0% { 
+                transform: translate(-50%, -50%) scale(0.5); 
+                opacity: 0; 
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.2); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(1) translateY(-30px); 
+                opacity: 0; 
+            }
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+        
+        .trophy-gold { color: #FFD700; }
+        .trophy-silver { color: #C0C0C0; }
+        .trophy-bronze { color: #CD7F32; }
+        
+        .celebration {
+            animation: celebrate 0.8s ease-out;
+        }
+        
+        @keyframes celebrate {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .hint-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+            border: 2px solid #f59e0b;
+            animation: hintPulse 0.5s ease-out;
+        }
+        
+        @keyframes hintPulse {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .word-category {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            border: 1px solid #a5b4fc;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <button onclick="goHome()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all duration-300 backdrop-blur-sm">
+                    ← Zurück zur Startseite
+                </button>
+                <h1 class="text-4xl font-bold text-white drop-shadow-lg">
+                    🎨 Wort-Maler
+                </h1>
+            </div>
+            <p class="text-white/90 text-lg">Rate das englische Wort während es gezeichnet wird!</p>
+        </div>
+
+        <!-- Game Stats -->
+        <div class="flex justify-center gap-4 mb-6">
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="score">0</div>
+                    <div class="text-sm text-gray-600">Punkte</div>
+                </div>
+            </div>
+            
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="wordCount">0/10</div>
+                    <div class="text-sm text-gray-600">Wörter</div>
+                </div>
+            </div>
+            
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600" id="timeBonus">100%</div>
+                    <div class="text-sm text-gray-600">Zeit-Bonus</div>
+                </div>
+            </div>
+            
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600" id="hintsLeft">3</div>
+                    <div class="text-sm text-gray-600">Hints</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="flex justify-center gap-4 mb-6">
+            <button id="startBtn" onclick="startGame()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                🎮 Spiel starten
+            </button>
+            
+            <button id="hintBtn" onclick="useHint()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hidden">
+                💡 Hint verwenden
+            </button>
+            
+            <button id="skipBtn" onclick="skipWord()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hidden">
+                ⏭️ Überspringen
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="progressContainer" class="game-card rounded-xl p-4 shadow-lg mb-6 hidden">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-700 font-medium">Fortschritt</span>
+                <span id="progressText" class="text-gray-700 font-bold">0 / 10</span>
+            </div>
+            <div class="bg-gray-200 rounded-full h-3">
+                <div id="progressBar" class="progress-bar bg-indigo-500 h-3 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div id="gameArea" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6 hidden">
+            <!-- Drawing Canvas -->
+            <div class="game-card rounded-xl p-6 shadow-lg">
+                <div class="text-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Zeichnung</h3>
+                    <div class="word-category px-3 py-1 rounded-full text-sm font-medium text-indigo-700 inline-block mb-4" id="categoryHint">
+                        Kategorie: ?
+                    </div>
+                </div>
+                
+                <div class="flex justify-center">
+                    <svg id="drawingCanvas" class="drawing-canvas" width="300" height="300" viewBox="0 0 300 300">
+                        <!-- Zeichnungen werden hier eingefügt -->
+                    </svg>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <div class="text-sm text-gray-600">
+                        Zeichnung wird in <span id="drawingProgress" class="font-bold">0%</span> vervollständigt
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guess Area -->
+            <div class="game-card rounded-xl p-6 shadow-lg">
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Deine Vermutung</h3>
+                    <div class="space-y-4">
+                        <input 
+                            type="text" 
+                            id="guessInput" 
+                            class="guess-input w-full px-6 py-4 rounded-lg text-xl text-center font-bold outline-none"
+                            placeholder="Englisches Wort eingeben..."
+                            autocomplete="off"
+                        >
+                        <button onclick="submitGuess()" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105">
+                            ✓ Raten
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="hintArea" class="hidden">
+                    <div class="hint-box p-4 rounded-lg text-center">
+                        <div class="font-bold text-yellow-800 mb-2">💡 Hint</div>
+                        <div id="hintText" class="text-yellow-700"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-600 mb-2">Zeit-Bonus</div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div id="timeBonusBar" class="bg-green-500 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="game-card rounded-xl p-6 shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800 flex items-center justify-center gap-2">
+                🏆 Bestenliste - Top 10
+            </h2>
+            <div id="leaderboard" class="space-y-2">
+                <!-- Wird per JavaScript geladen -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="game-card p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 celebration">
+            <div class="text-center">
+                <div class="text-6xl mb-4">🎨</div>
+                <h3 class="text-3xl font-bold text-indigo-600 mb-4">Spiel beendet!</h3>
+                <p class="text-gray-700 mb-2">Deine Punktzahl: <span id="finalScore" class="font-bold text-indigo-600"></span></p>
+                <p class="text-gray-700 mb-4">Richtige Wörter: <span id="finalWords" class="font-bold text-green-600"></span>/10</p>
+                
+                <input type="text" id="playerName" placeholder="Dein Name für die Bestenliste" 
+                       class="w-full p-3 border border-gray-300 rounded-lg mb-4 text-center" maxLength="20">
+                
+                <div class="flex gap-3">
+                    <button onclick="saveScore()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-lg font-bold transition-colors">
+                        💾 Speichern
+                    </button>
+                    <button onclick="closeModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition-colors">
+                        ❌ Überspringen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Zeichnungen für verschiedene Wörter
+        const drawings = {
+            'SHOES': {
+                paths: [
+                    'M50,200 Q100,180 150,200 Q200,180 250,200', // Schuhform
+                    'M60,195 L240,195', // Sohle
+                    'M80,170 Q150,150 220,170', // Oberteil
+                    'M100,160 L100,140 M120,160 L120,140 M140,160 L140,140', // Schnürsenkel
+                    'M90,150 Q150,140 210,150' // Schnürung
+                ],
+                category: 'Kleidung',
+                hints: ['Du trägst sie an den Füßen', 'Haben Schnürsenkel', 'Schützen beim Gehen']
+            },
+            'WATCH': {
+                paths: [
+                    'M150,150 A50,50 0 1,1 149,150', // Zifferblatt
+                    'M100,130 Q80,120 80,150 Q80,180 100,170', // Linkes Armband
+                    'M200,130 Q220,120 220,150 Q220,180 200,170', // Rechtes Armband
+                    'M150,150 L150,120', // Stundenzeiger
+                    'M150,150 L170,130', // Minutenzeiger
+                    'M130,130 L170,130 L170,170 L130,170' // Zifferblatt-Details
+                ],
+                category: 'Accessoire',
+                hints: ['Zeigt die Zeit an', 'Trägst du am Handgelenk', 'Hat Zeiger oder Display']
+            },
+            'CAP': {
+                paths: [
+                    'M80,180 Q150,120 220,180', // Mützenform
+                    'M70,180 L230,180', // Unterkante
+                    'M60,190 Q100,200 140,190', // Schirm links
+                    'M160,190 Q200,200 240,190', // Schirm rechts
+                    'M100,160 Q150,140 200,160' // Oberteil
+                ],
+                category: 'Kleidung',
+                hints: ['Kopfbedeckung', 'Hat einen Schirm vorne', 'Schützt vor Sonne']
+            },
+            'FRENCH': {
+                paths: [
+                    'M100,100 L100,220', // F - senkrechter Strich
+                    'M100,100 L180,100', // F - oberer Strich
+                    'M100,160 L160,160', // F - mittlerer Strich
+                    'M200,100 Q240,120 240,160 Q240,200 200,220', // R - Bogen
+                    'M200,100 L200,220', // R - senkrechter Strich
+                    'M200,160 L240,220' // R - Diagonale
+                ],
+                category: 'Sprache',
+                hints: ['Eine Sprache', 'Wird in Frankreich gesprochen', 'Beginnt mit F']
+            },
+            'ART': {
+                paths: [
+                    'M80,220 L120,100 L160,220', // A
+                    'M95,180 L145,180', // A - Querbalken
+                    'M180,100 Q220,120 220,160 Q220,200 180,220', // R - Bogen
+                    'M180,100 L180,220', // R - senkrechter Strich
+                    'M180,160 L220,220', // R - Diagonale
+                    'M240,100 L280,100 M260,100 L260,220' // T
+                ],
+                category: 'Schulfach',
+                hints: ['Kreatives Schulfach', 'Malen und Zeichnen', 'Nur 3 Buchstaben']
+            },
+            'SCHOOL': {
+                paths: [
+                    'M50,80 L250,80 L250,220 L50,220 Z', // Gebäude
+                    'M100,120 L100,180 L140,180 L140,120 Z', // Tür
+                    'M160,120 L200,120 L200,160 L160,160 Z', // Fenster 1
+                    'M80,120 L120,120 L120,160 L80,160 Z', // Fenster 2
+                    'M120,150 A5,5 0 1,1 120,149', // Türknauf
+                    'M125,60 L175,60 L150,20 Z' // Dach
+                ],
+                category: 'Gebäude',
+                hints: ['Ort zum Lernen', 'Kinder gehen hier hin', 'Hat Klassenzimmer']
+            },
+            'GOOD': {
+                paths: [
+                    'M150,80 A20,20 0 1,1 150,79', // Smiley Gesicht
+                    'M135,90 A5,5 0 1,1 135,89', // Linkes Auge
+                    'M165,90 A5,5 0 1,1 165,89', // Rechtes Auge
+                    'M130,110 Q150,130 170,110', // Lächeln
+                    'M100,150 L200,150', // Daumen horizontal
+                    'M200,150 L200,200 L180,220 L160,200 L160,170' // Daumen vertikal
+                ],
+                category: 'Eigenschaft',
+                hints: ['Gegenteil von schlecht', 'Positive Bewertung', 'Synonym für toll']
+            },
+            'BELT': {
+                paths: [
+                    'M50,150 L250,150', // Gürtel
+                    'M50,140 L50,160 L250,160 L250,140', // Gürtelbreite
+                    'M200,130 L220,130 L220,170 L200,170 Z', // Schnalle
+                    'M205,145 L215,145 L215,155 L205,155 Z', // Schnallen-Detail
+                    'M80,145 A3,3 0 1,1 80,144', // Loch 1
+                    'M100,145 A3,3 0 1,1 100,144', // Loch 2
+                    'M120,145 A3,3 0 1,1 120,144' // Loch 3
+                ],
+                category: 'Accessoire',
+                hints: ['Hält die Hose', 'Trägst du um die Taille', 'Hat Löcher und Schnalle']
+            }
+        };
+
+        // Spielvariablen
+        let gameActive = false;
+        let currentWord = null;
+        let currentWordIndex = 0;
+        let score = 0;
+        let correctWords = 0;
+        let hintsLeft = 3;
+        let drawingProgress = 0;
+        let timeBonus = 100;
+        let drawingInterval = null;
+        let bonusInterval = null;
+
+        // Hilfsfunktionen
+        function getRandomWord() {
+            const words = Object.keys(drawings);
+            return words[Math.floor(Math.random() * words.length)];
+        }
+
+        function updateDisplay() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('wordCount').textContent = `${correctWords}/10`;
+            document.getElementById('timeBonus').textContent = timeBonus + '%';
+            document.getElementById('hintsLeft').textContent = hintsLeft;
+            document.getElementById('progressText').textContent = `${correctWords} / 10`;
+            document.getElementById('progressBar').style.width = (correctWords / 10 * 100) + '%';
+        }
+
+        function showScorePopup(points) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = '+' + points + ' Punkte!';
+            document.getElementById('gameArea').appendChild(popup);
+            
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.parentNode.removeChild(popup);
+                }
+            }, 1500);
+        }
+
+        // Navigation
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        // Spiel-Logik
+        function startGame() {
+            gameActive = true;
+            currentWordIndex = 0;
+            score = 0;
+            correctWords = 0;
+            hintsLeft = 3;
+            
+            document.getElementById('gameArea').classList.remove('hidden');
+            document.getElementById('progressContainer').classList.remove('hidden');
+            document.getElementById('hintBtn').classList.remove('hidden');
+            document.getElementById('skipBtn').classList.remove('hidden');
+            document.getElementById('startBtn').textContent = '🔄 Neues Spiel';
+            
+            updateDisplay();
+            startNewWord();
+        }
+
+        function startNewWord() {
+            if (currentWordIndex >= 10) {
+                endGame();
+                return;
+            }
+
+            currentWord = getRandomWord();
+            drawingProgress = 0;
+            timeBonus = 100;
+            
+            document.getElementById('categoryHint').textContent = `Kategorie: ${drawings[currentWord].category}`;
+            document.getElementById('guessInput').value = '';
+            document.getElementById('hintArea').classList.add('hidden');
+            document.getElementById('drawingProgress').textContent = '0%';
+            document.getElementById('timeBonusBar').style.width = '100%';
+            
+            clearCanvas();
+            startDrawing();
+            startBonusTimer();
+            
+            document.getElementById('guessInput').focus();
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('drawingCanvas');
+            canvas.innerHTML = '';
+        }
+
+        function startDrawing() {
+            const paths = drawings[currentWord].paths;
+            let pathIndex = 0;
+            
+            function drawNextPath() {
+                if (pathIndex >= paths.length || !gameActive) return;
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', paths[pathIndex]);
+                path.setAttribute('class', 'drawing-path draw-animation');
+                
+                document.getElementById('drawingCanvas').appendChild(path);
+                
+                pathIndex++;
+                drawingProgress = Math.round((pathIndex / paths.length) * 100);
+                document.getElementById('drawingProgress').textContent = drawingProgress + '%';
+                
+                if (pathIndex < paths.length) {
+                    setTimeout(drawNextPath, 3000);
+                }
+            }
+            
+            drawNextPath();
+        }
+
+        function startBonusTimer() {
+            if (bonusInterval) clearInterval(bonusInterval);
+            
+            bonusInterval = setInterval(() => {
+                if (!gameActive) return;
+                
+                timeBonus = Math.max(10, timeBonus - 2);
+                document.getElementById('timeBonus').textContent = timeBonus + '%';
+                document.getElementById('timeBonusBar').style.width = timeBonus + '%';
+                
+                if (timeBonus <= 50) {
+                    document.getElementById('timeBonusBar').className = 'bg-yellow-500 h-2 rounded-full transition-all duration-1000';
+                }
+                if (timeBonus <= 25) {
+                    document.getElementById('timeBonusBar').className = 'bg-red-500 h-2 rounded-full transition-all duration-1000';
+                }
+            }, 500);
+        }
+
+        function submitGuess() {
+            const guess = document.getElementById('guessInput').value.trim().toUpperCase();
+            if (!guess || !gameActive) return;
+            
+            if (guess === currentWord) {
+                // Richtige Antwort
+                const basePoints = 50;
+                const bonusPoints = Math.round(basePoints * (timeBonus / 100));
+                const totalPoints = basePoints + bonusPoints;
+                
+                score += totalPoints;
+                correctWords++;
+                currentWordIndex++;
+                
+                showScorePopup(totalPoints);
+                updateDisplay();
+                
+                clearInterval(bonusInterval);
+                
+                setTimeout(() => {
+                    startNewWord();
+                }, 2000);
+            } else {
+                // Falsche Antwort
+                document.getElementById('guessInput').style.borderColor = '#ef4444';
+                document.getElementById('guessInput').style.animation = 'shake 0.5s ease-in-out';
+                
+                setTimeout(() => {
+                    document.getElementById('guessInput').style.borderColor = '#3b82f6';
+                    document.getElementById('guessInput').style.animation = '';
+                    document.getElementById('guessInput').value = '';
+                }, 1000);
+            }
+        }
+
+        function useHint() {
+            if (hintsLeft <= 0 || !currentWord) return;
+            
+            hintsLeft--;
+            updateDisplay();
+            
+            const hints = drawings[currentWord].hints;
+            const hintIndex = 3 - hintsLeft - 1;
+            const hintText = hints[Math.min(hintIndex, hints.length - 1)];
+            
+            document.getElementById('hintText').textContent = hintText;
+            document.getElementById('hintArea').classList.remove('hidden');
+            
+            if (hintsLeft === 0) {
+                document.getElementById('hintBtn').disabled = true;
+                document.getElementById('hintBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function skipWord() {
+            if (!gameActive) return;
+            
+            currentWordIndex++;
+            clearInterval(bonusInterval);
+            
+            setTimeout(() => {
+                startNewWord();
+            }, 500);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(bonusInterval);
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalWords').textContent = correctWords;
+            document.getElementById('successModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            loadLeaderboard();
+        }
+
+        async function saveScore() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) {
+                alert('Bitte gib deinen Namen ein!');
+                return;
+            }
+            
+            try {
+                const scoreData = {
+                    name: name,
+                    score: score,
+                    correctWords: correctWords,
+                    timestamp: Date.now()
+                };
+                
+                await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/painter-leaderboard.json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(scoreData)
+                });
+                
+                closeModal();
+                
+            } catch (error) {
+                console.error('Fehler beim Speichern:', error);
+                alert('Fehler beim Speichern der Punktzahl!');
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/painter-leaderboard.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        const leaderboard = Object.values(data)
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, 10);
+                        
+                        displayLeaderboard(leaderboard);
+                    }
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Bestenliste:', error);
+            }
+        }
+
+        function displayLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard');
+            
+            if (leaderboard.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-8">Noch keine Einträge vorhanden</div>';
+                return;
+            }
+            
+            container.innerHTML = leaderboard.map((entry, index) => {
+                let trophyIcon = '';
+                let bgClass = 'bg-gray-50';
+                
+                if (index === 0) {
+                    trophyIcon = '<span class="trophy-gold text-xl">🥇</span>';
+                    bgClass = 'bg-yellow-100 border-yellow-300 border-2';
+                } else if (index === 1) {
+                    trophyIcon = '<span class="trophy-silver text-xl">🥈</span>';
+                    bgClass = 'bg-gray-100 border-gray-300 border-2';
+                } else if (index === 2) {
+                    trophyIcon = '<span class="trophy-bronze text-xl">🥉</span>';
+                    bgClass = 'bg-orange-100 border-orange-300 border-2';
+                }
+                
+                return `
+                    <div class="flex justify-between items-center p-4 rounded-lg ${bgClass} transition-all duration-200 hover:transform hover:translate-x-2">
+                        <div class="flex items-center gap-3">
+                            ${trophyIcon || `<span class="font-bold text-gray-500 text-lg">#${index + 1}</span>`}
+                            <span class="font-medium text-gray-800">${entry.name}</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-mono font-bold text-indigo-600 text-lg">${entry.score} Punkte</div>
+                            <div class="text-sm text-gray-500">${entry.correctWords}/10 Wörter</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLeaderboard();
+            
+            document.getElementById('guessInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitGuess();
+                }
+            });
+        });
+
+        // CSS für Shake-Animation hinzufügen
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
