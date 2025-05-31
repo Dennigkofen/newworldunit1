@@ -411,44 +411,46 @@
             `;
         }
 
-        // KI-Bewertung (verbessert und repariert)
+        // KI-Bewertung (nochmals verbessert und präziser)
         async function evaluateWithAI(word, explanation) {
             try {
                 console.log(`Evaluating "${explanation}" for word "${word}"`);
                 
-                const prompt = `You are evaluating if a student correctly explained the English word "${word}".
+                const prompt = `IMPORTANT: You are evaluating the word "${word}" (not any other word).
 
-Student's answer: "${explanation}"
+Student's explanation for the word "${word}": "${explanation}"
+
+Task: Check if "${explanation}" correctly explains, is a synonym of, or is an antonym of the word "${word}".
 
 The student can provide:
-1. Normal explanation (describe what the word means)
-2. Synonym: starting with "(S)" or "synonym:" 
-3. Antonym: starting with "(A)" or "antonym:"
+1. Normal explanation: describe what "${word}" means
+2. Synonym: "(S) word" or "synonym: word" - check if the word is a synonym of "${word}"
+3. Antonym: "(A) word" or "antonym: word" - check if the word is an antonym of "${word}"
 
-Examples of CORRECT answers for different words:
-- FRENCH: "language spoken in France" = CORRECT
-- SHOES: "things you wear on feet" = CORRECT  
-- PRACTICE: "(S) exercise" = CORRECT
-- GOOD: "(A) bad" = CORRECT
+CRITICAL: You are only evaluating the word "${word}". Ignore any other words.
 
-Respond with valid JSON:
+Examples for "${word}":
+${word === 'PRACTICE' ? '- "(S) exercise" = CORRECT (exercise is a synonym of practice)\n- "(S) training" = CORRECT\n- "doing something repeatedly" = CORRECT' : ''}
+${word === 'FRENCH' ? '- "language spoken in France" = CORRECT\n- "the language of France" = CORRECT' : ''}
+${word === 'GOOD' ? '- "(A) bad" = CORRECT (bad is antonym of good)\n- "high quality" = CORRECT' : ''}
+
+Respond with JSON:
 {
   "correct": true,
   "precise": true,
   "explanation_type": "normal",
   "needs_correction": false,
   "corrected_explanation": "",
-  "feedback": "Richtig erklärt!"
+  "feedback": "Richtig!"
 }
 
-Rules:
-- correct: Is the explanation factually right for "${word}"? Be GENEROUS with normal explanations.
-- precise: Is it specific enough? Synonyms/antonyms are automatically precise if correct.
+Rules for "${word}":
+- correct: Does the explanation/synonym/antonym correctly relate to "${word}"?
+- precise: Is it specific enough? (synonyms/antonyms are automatically precise)
 - explanation_type: "normal", "synonym", or "antonym"
-- needs_correction: Only true if content is correct but has grammar/spelling errors
-- feedback: Short German encouragement (max 25 words)
+- feedback: Short German comment (max 20 words)
 
-Be generous with "correct" for normal explanations that capture the meaning of "${word}".`
+Remember: You are ONLY evaluating "${word}", not any other word.`;
 
                 const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
@@ -460,8 +462,9 @@ Be generous with "correct" for normal explanations that capture the meaning of "
                             parts: [{ text: prompt }]
                         }],
                         generationConfig: {
-                            temperature: 0.2,
-                            maxOutputTokens: 300
+                            temperature: 0.1,
+                            maxOutputTokens: 300,
+                            candidateCount: 1
                         }
                     })
                 });
@@ -473,6 +476,7 @@ Be generous with "correct" for normal explanations that capture the meaning of "
                 }
 
                 const data = await response.json();
+                console.log(`API evaluating "${word}" with "${explanation}"`);
                 console.log('Full API Response:', JSON.stringify(data, null, 2));
                 
                 if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -481,7 +485,7 @@ Be generous with "correct" for normal explanations that capture the meaning of "
                 }
 
                 let aiText = data.candidates[0].content.parts[0].text.trim();
-                console.log('Raw AI Response:', aiText);
+                console.log(`Raw AI Response for "${word}":`, aiText);
 
                 // Verbessertes JSON-Parsing
                 let jsonMatch = aiText.match(/\{[\s\S]*\}/);
@@ -490,7 +494,7 @@ Be generous with "correct" for normal explanations that capture the meaning of "
                     try {
                         const result = JSON.parse(aiText);
                         console.log('Direct JSON parse successful:', result);
-                        return validateAndReturn(result);
+                        return validateAndReturn(result, word, explanation);
                     } catch (e) {
                         console.error('No valid JSON found. AI Response:', aiText);
                         throw new Error('No valid JSON found in AI response');
@@ -498,16 +502,19 @@ Be generous with "correct" for normal explanations that capture the meaning of "
                 }
 
                 const result = JSON.parse(jsonMatch[0]);
-                console.log('Parsed JSON result:', result);
-                return validateAndReturn(result);
+                console.log(`Parsed JSON result for "${word}":`, result);
+                return validateAndReturn(result, word, explanation);
 
             } catch (error) {
-                console.error('AI Evaluation failed:', error);
+                console.error(`AI Evaluation failed for "${word}":`, error);
                 throw error;
             }
         }
 
-        function validateAndReturn(result) {
+        function validateAndReturn(result, word, explanation) {
+            // Zusätzliche Validierung mit Debugging
+            console.log(`Validating result for word "${word}" with explanation "${explanation}":`, result);
+            
             // Validierung und Defaults setzen
             if (typeof result.correct !== 'boolean') {
                 console.warn('Invalid correct value, defaulting to false');
@@ -530,6 +537,7 @@ Be generous with "correct" for normal explanations that capture the meaning of "
                 result.corrected_explanation = '';
             }
             
+            console.log(`Final validated result for "${word}":`, result);
             return result;
         }
 
