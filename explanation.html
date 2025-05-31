@@ -411,6 +411,15 @@ Student's explanation: "${explanation}"
 
 Check if this explanation is correct and precise for the word "${word}".
 
+Be VERY GENEROUS with your evaluation. If the explanation captures any main meaning of "${word}", mark it as correct and precise.
+
+Examples of what should be CORRECT and PRECISE:
+- SUBJECT: "a topic you study at school" = CORRECT AND PRECISE
+- SUBJECT: "a topic" = CORRECT AND PRECISE  
+- SUBJECT: "something you learn" = CORRECT AND PRECISE
+- FRENCH: "language of France" = CORRECT AND PRECISE
+- SHOES: "things for feet" = CORRECT AND PRECISE
+
 Respond with JSON:
 {
   "correct": true,
@@ -419,11 +428,11 @@ Respond with JSON:
 }
 
 Rules:
-- correct: Is the explanation factually right for "${word}"?
-- precise: Is it specific enough (not too general)?
+- correct: Is the explanation factually right for "${word}"? Be VERY generous.
+- precise: Is it specific enough? Be MUCH more lenient than before.
 - feedback: Brief encouraging German comment (max 20 words)
 
-Be generous with correct explanations that capture the meaning of "${word}".`;
+IMPORTANT: Be generous and accept explanations that show basic understanding of "${word}".`;
 
                 const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
@@ -435,7 +444,7 @@ Be generous with correct explanations that capture the meaning of "${word}".`;
                             parts: [{ text: prompt }]
                         }],
                         generationConfig: {
-                            temperature: 0.2,
+                            temperature: 0.1,
                             maxOutputTokens: 200
                         }
                     })
@@ -472,9 +481,10 @@ Be generous with correct explanations that capture the meaning of "${word}".`;
             const wordLower = word.toLowerCase();
             const expLower = explanation.toLowerCase();
             
-            // Basis-Keywords für häufige Wörter
+            // Basis-Keywords für häufige Wörter (großzügiger)
             const keywords = {
-                'french': ['language', 'france', 'speak', 'spoken'],
+                'subject': ['topic', 'study', 'school', 'learn', 'course', 'lesson', 'area', 'field'],
+                'french': ['language', 'france', 'speak', 'spoken', 'country'],
                 'shoes': ['foot', 'feet', 'wear', 'walk'],
                 'watch': ['time', 'wrist', 'clock'],
                 'clothing': ['wear', 'clothes', 'garment'],
@@ -483,7 +493,7 @@ Be generous with correct explanations that capture the meaning of "${word}".`;
                 'backpack': ['bag', 'carry', 'back'],
                 'belt': ['waist', 'around', 'wear'],
                 'sunglasses': ['sun', 'eyes', 'dark', 'bright'],
-                'practice': ['exercise', 'training', 'repeat'],
+                'practice': ['exercise', 'training', 'repeat', 'do'],
                 'geography': ['earth', 'countries', 'maps'],
                 'maths': ['numbers', 'mathematics', 'calculate'],
                 'science': ['experiment', 'research', 'nature'],
@@ -493,13 +503,17 @@ Be generous with correct explanations that capture the meaning of "${word}".`;
             
             const wordKeywords = keywords[wordLower] || [];
             const hasKeyword = wordKeywords.some(kw => expLower.includes(kw));
-            const isLongEnough = explanation.length >= 6;
-            const hasMultipleWords = explanation.split(' ').length >= 2;
+            const isLongEnough = explanation.length >= 4; // Sehr großzügig
+            const hasMultipleWords = explanation.split(' ').length >= 1; // Sehr großzügig
+            
+            // Sehr großzügige Bewertung
+            const isCorrect = hasKeyword || isLongEnough;
+            const isPrecise = hasKeyword || (isLongEnough && hasMultipleWords);
             
             return {
-                correct: hasKeyword || (isLongEnough && hasMultipleWords),
-                precise: hasKeyword && hasMultipleWords,
-                feedback: hasKeyword ? "Gut erklärt!" : "Versuche es spezifischer."
+                correct: isCorrect,
+                precise: isPrecise,
+                feedback: isCorrect ? "Gut erklärt!" : "Versuche es nochmal."
             };
         }
 
