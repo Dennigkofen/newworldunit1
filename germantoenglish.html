@@ -413,9 +413,15 @@
             const draggedIndex = parseInt(draggedElement.dataset.pairIndex);
             const dropIndex = parseInt(dropTarget.dataset.pairIndex);
             
+            // Prüfen ob bereits gematcht
+            if (matches.includes(draggedIndex) || matches.includes(dropIndex)) {
+                console.log('One of the words already matched');
+                return;
+            }
+            
             console.log('Drop attempt:', {
                 draggedType, dropType, draggedIndex, dropIndex,
-                draggedText: draggedElement.dataset.text,
+                draggedText: draggedElement.textContent,
                 dropText: dropTarget.textContent
             });
             
@@ -425,20 +431,24 @@
                 console.log('Successful match!');
                 matches.push(draggedIndex);
                 
+                // Sofort ausblenden um weitere Interaktion zu verhindern
+                draggedElement.style.pointerEvents = 'none';
+                dropTarget.style.pointerEvents = 'none';
+                
                 // Animationen
                 draggedElement.classList.add('matched');
                 dropTarget.classList.add('matched');
                 
                 setTimeout(() => {
-                    draggedElement.style.display = 'none';
-                    dropTarget.style.display = 'none';
+                    draggedElement.remove();
+                    dropTarget.remove();
                 }, 600);
                 
                 updateProgress();
                 
                 // Spiel beendet?
                 if (matches.length === 10) {
-                    endGame();
+                    setTimeout(() => endGame(), 700);
                 }
             } else {
                 console.log('No match - wrong combination');
