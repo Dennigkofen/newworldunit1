@@ -87,14 +87,6 @@
                 </h1>
             </div>
             <p class="text-white/90 text-lg">Erkläre englische Wörter auf Englisch! Die KI bewertet deine Erklärungen.</p>
-            <div class="mt-4 bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                <h3 class="text-white font-bold mb-2">💡 Erklärungs-Optionen:</h3>
-                <div class="text-white/90 text-sm space-y-1">
-                    <div>• <strong>Normale Erklärung:</strong> "Something you wear on your feet"</div>
-                    <div>• <strong>Synonym:</strong> "(S) Exercise" oder "Synonym: Exercise"</div>
-                    <div>• <strong>Antonym:</strong> "(A) Bad" oder "Antonym: Bad"</div>
-                </div>
-            </div>
         </div>
 
         <!-- Game Controls -->
@@ -131,16 +123,13 @@
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Aktuelles Wort</h2>
                     <div id="currentWord" class="text-6xl font-bold text-indigo-600 mb-4">WORD</div>
-                    <div class="text-gray-600 space-y-1">
-                        <p>Erkläre dieses Wort auf Englisch!</p>
-                        <p class="text-sm"><strong>Tipp:</strong> Du kannst auch Synonyme "(S)" oder Antonyme "(A)" verwenden</p>
-                    </div>
+                    <p class="text-gray-600">Erkläre dieses Wort auf Englisch!</p>
                 </div>
                 
                 <div class="space-y-4">
                     <textarea id="explanationInput" 
                              class="w-full p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-                             placeholder="Type your explanation, synonym (S) or antonym (A) here..."
+                             placeholder="Type your explanation in English here..."
                              rows="4"></textarea>
                     
                     <button id="submitBtn" onclick="submitExplanation()" 
@@ -411,46 +400,30 @@
             `;
         }
 
-        // KI-Bewertung (nochmals verbessert und präziser)
+        // Einfache KI-Bewertung (zurück zur Grundversion)
         async function evaluateWithAI(word, explanation) {
             try {
                 console.log(`Evaluating "${explanation}" for word "${word}"`);
                 
-                const prompt = `IMPORTANT: You are evaluating the word "${word}" (not any other word).
+                const prompt = `You are evaluating if a student correctly explained the English word "${word}".
 
-Student's explanation for the word "${word}": "${explanation}"
+Student's explanation: "${explanation}"
 
-Task: Check if "${explanation}" correctly explains, is a synonym of, or is an antonym of the word "${word}".
-
-The student can provide:
-1. Normal explanation: describe what "${word}" means
-2. Synonym: "(S) word" or "synonym: word" - check if the word is a synonym of "${word}"
-3. Antonym: "(A) word" or "antonym: word" - check if the word is an antonym of "${word}"
-
-CRITICAL: You are only evaluating the word "${word}". Ignore any other words.
-
-Examples for "${word}":
-${word === 'PRACTICE' ? '- "(S) exercise" = CORRECT (exercise is a synonym of practice)\n- "(S) training" = CORRECT\n- "doing something repeatedly" = CORRECT' : ''}
-${word === 'FRENCH' ? '- "language spoken in France" = CORRECT\n- "the language of France" = CORRECT' : ''}
-${word === 'GOOD' ? '- "(A) bad" = CORRECT (bad is antonym of good)\n- "high quality" = CORRECT' : ''}
+Check if this explanation is correct and precise for the word "${word}".
 
 Respond with JSON:
 {
   "correct": true,
   "precise": true,
-  "explanation_type": "normal",
-  "needs_correction": false,
-  "corrected_explanation": "",
-  "feedback": "Richtig!"
+  "feedback": "Gut erklärt!"
 }
 
-Rules for "${word}":
-- correct: Does the explanation/synonym/antonym correctly relate to "${word}"?
-- precise: Is it specific enough? (synonyms/antonyms are automatically precise)
-- explanation_type: "normal", "synonym", or "antonym"
-- feedback: Short German comment (max 20 words)
+Rules:
+- correct: Is the explanation factually right for "${word}"?
+- precise: Is it specific enough (not too general)?
+- feedback: Brief encouraging German comment (max 20 words)
 
-Remember: You are ONLY evaluating "${word}", not any other word.`;
+Be generous with correct explanations that capture the meaning of "${word}".`;
 
                 const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
@@ -462,185 +435,71 @@ Remember: You are ONLY evaluating "${word}", not any other word.`;
                             parts: [{ text: prompt }]
                         }],
                         generationConfig: {
-                            temperature: 0.1,
-                            maxOutputTokens: 300,
-                            candidateCount: 1
+                            temperature: 0.2,
+                            maxOutputTokens: 200
                         }
                     })
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('API Error Response:', errorText);
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
                 }
 
                 const data = await response.json();
-                console.log(`API evaluating "${word}" with "${explanation}"`);
-                console.log('Full API Response:', JSON.stringify(data, null, 2));
+                const aiText = data.candidates[0].content.parts[0].text.trim();
                 
-                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    console.error('Invalid API response structure:', data);
-                    throw new Error('Invalid API response structure');
+                // JSON extrahieren
+                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const result = JSON.parse(jsonMatch[0]);
+                    return {
+                        correct: result.correct || false,
+                        precise: result.precise || false,
+                        feedback: result.feedback || 'Bewertung erhalten.'
+                    };
+                } else {
+                    throw new Error('No JSON in response');
                 }
-
-                let aiText = data.candidates[0].content.parts[0].text.trim();
-                console.log(`Raw AI Response for "${word}":`, aiText);
-
-                // Verbessertes JSON-Parsing
-                let jsonMatch = aiText.match(/\{[\s\S]*\}/);
-                if (!jsonMatch) {
-                    // Fallback: Versuche alles als JSON zu parsen
-                    try {
-                        const result = JSON.parse(aiText);
-                        console.log('Direct JSON parse successful:', result);
-                        return validateAndReturn(result, word, explanation);
-                    } catch (e) {
-                        console.error('No valid JSON found. AI Response:', aiText);
-                        throw new Error('No valid JSON found in AI response');
-                    }
-                }
-
-                const result = JSON.parse(jsonMatch[0]);
-                console.log(`Parsed JSON result for "${word}":`, result);
-                return validateAndReturn(result, word, explanation);
 
             } catch (error) {
-                console.error(`AI Evaluation failed for "${word}":`, error);
+                console.error('AI Evaluation failed:', error);
                 throw error;
             }
         }
 
-        function validateAndReturn(result, word, explanation) {
-            // Zusätzliche Validierung mit Debugging
-            console.log(`Validating result for word "${word}" with explanation "${explanation}":`, result);
-            
-            // Validierung und Defaults setzen
-            if (typeof result.correct !== 'boolean') {
-                console.warn('Invalid correct value, defaulting to false');
-                result.correct = false;
-            }
-            if (typeof result.precise !== 'boolean') {
-                console.warn('Invalid precise value, defaulting to false');  
-                result.precise = false;
-            }
-            if (!result.explanation_type) {
-                result.explanation_type = 'normal';
-            }
-            if (!result.feedback) {
-                result.feedback = 'Bewertung erhalten.';
-            }
-            if (typeof result.needs_correction !== 'boolean') {
-                result.needs_correction = false;
-            }
-            if (!result.corrected_explanation) {
-                result.corrected_explanation = '';
-            }
-            
-            console.log(`Final validated result for "${word}":`, result);
-            return result;
-        }
-
-        // Fallback-Bewertung ohne KI (verbessert)
+        // Fallback-Bewertung ohne KI
         function evaluateWithoutAI(word, explanation) {
             const wordLower = word.toLowerCase();
-            const expLower = explanation.toLowerCase().trim();
+            const expLower = explanation.toLowerCase();
             
-            // Prüfe ob es ein Synonym/Antonym ist
-            const isSynonym = expLower.match(/^\(s\)|^synonym/) || expLower.includes('synonym:') || expLower.includes('synonym to');
-            const isAntonym = expLower.match(/^\(a\)|^antonym/) || expLower.includes('antonym:') || expLower.includes('antonym to');
-            
-            let explanationType = 'normal';
-            let extractedWord = expLower;
-            
-            if (isSynonym) {
-                explanationType = 'synonym';
-                extractedWord = expLower.replace(/^\(s\)|synonym:?|synonym to|^\s*/, '').trim();
-            } else if (isAntonym) {
-                explanationType = 'antonym';
-                extractedWord = expLower.replace(/^\(a\)|antonym:?|antonym to|^\s*/, '').trim();
-            }
-            
-            // Verbesserte Synonym/Antonym-Listen
-            const synonyms = {
-                'practice': ['exercise', 'training', 'rehearsal', 'drill', 'workout'],
-                'good': ['excellent', 'great', 'fine', 'nice', 'wonderful', 'amazing'],
-                'excited': ['thrilled', 'enthusiastic', 'eager', 'happy'],
-                'passionate': ['enthusiastic', 'devoted', 'intense', 'committed'],
-                'proud': ['pleased', 'satisfied', 'content', 'happy'],
-                'interested': ['curious', 'fascinated', 'engaged', 'keen'],
-                'exciting': ['thrilling', 'stimulating', 'amazing', 'fun']
-            };
-            
-            const antonyms = {
-                'good': ['bad', 'terrible', 'awful', 'poor', 'horrible'],
-                'interested': ['bored', 'uninterested', 'indifferent', 'disinterested'],
-                'excited': ['calm', 'bored', 'uninterested', 'relaxed'],
-                'proud': ['ashamed', 'embarrassed', 'humble', 'modest'],
-                'passionate': ['indifferent', 'apathetic', 'unenthusiastic', 'cold']
-            };
-            
-            if (explanationType === 'synonym') {
-                const wordSynonyms = synonyms[wordLower] || [];
-                const isCorrectSynonym = wordSynonyms.includes(extractedWord);
-                return {
-                    correct: isCorrectSynonym,
-                    precise: isCorrectSynonym,
-                    explanation_type: 'synonym',
-                    needs_correction: false,
-                    corrected_explanation: "",
-                    feedback: isCorrectSynonym ? "Gutes Synonym!" : "Das ist kein passendes Synonym."
-                };
-            }
-            
-            if (explanationType === 'antonym') {
-                const wordAntonyms = antonyms[wordLower] || [];
-                const isCorrectAntonym = wordAntonyms.includes(extractedWord);
-                return {
-                    correct: isCorrectAntonym,
-                    precise: isCorrectAntonym,
-                    explanation_type: 'antonym',
-                    needs_correction: false,
-                    corrected_explanation: "",
-                    feedback: isCorrectAntonym ? "Gutes Antonym!" : "Das ist kein passendes Antonym."
-                };
-            }
-            
-            // Verbesserte normale Erklärung mit mehr Keywords
+            // Basis-Keywords für häufige Wörter
             const keywords = {
-                'french': ['language', 'france', 'speak', 'spoken', 'country'],
-                'shoes': ['foot', 'feet', 'wear', 'walk', 'footwear'],
-                'watch': ['time', 'wrist', 'clock', 'hour', 'minute'],
-                'clothing': ['wear', 'clothes', 'garment', 'dress', 'outfit'],
-                'school': ['learn', 'education', 'student', 'teach', 'study'],
-                'student': ['learn', 'study', 'school', 'education', 'pupil'],
-                'backpack': ['bag', 'carry', 'back', 'school', 'pack'],
-                'belt': ['waist', 'around', 'wear', 'leather', 'buckle'],
-                'sunglasses': ['sun', 'eyes', 'dark', 'bright', 'glasses'],
-                'geography': ['earth', 'countries', 'maps', 'world', 'places'],
-                'maths': ['numbers', 'calculate', 'mathematics', 'math', 'counting'],
-                'science': ['experiment', 'research', 'study', 'nature', 'laboratory'],
-                'history': ['past', 'events', 'ancient', 'time', 'historical'],
-                'art': ['paint', 'draw', 'create', 'picture', 'creative'],
-                'playground': ['play', 'children', 'school', 'outside', 'games']
+                'french': ['language', 'france', 'speak', 'spoken'],
+                'shoes': ['foot', 'feet', 'wear', 'walk'],
+                'watch': ['time', 'wrist', 'clock'],
+                'clothing': ['wear', 'clothes', 'garment'],
+                'school': ['learn', 'education', 'student'],
+                'student': ['learn', 'study', 'school'],
+                'backpack': ['bag', 'carry', 'back'],
+                'belt': ['waist', 'around', 'wear'],
+                'sunglasses': ['sun', 'eyes', 'dark', 'bright'],
+                'practice': ['exercise', 'training', 'repeat'],
+                'geography': ['earth', 'countries', 'maps'],
+                'maths': ['numbers', 'mathematics', 'calculate'],
+                'science': ['experiment', 'research', 'nature'],
+                'history': ['past', 'events', 'ancient'],
+                'art': ['paint', 'draw', 'create']
             };
             
             const wordKeywords = keywords[wordLower] || [];
             const hasKeyword = wordKeywords.some(kw => expLower.includes(kw));
-            const isLongEnough = explanation.length >= 6; // Weniger streng
-            const hasMultipleWords = explanation.split(' ').length >= 2; // Weniger streng
-            
-            // Großzügigere Bewertung
-            const isCorrect = hasKeyword || (isLongEnough && hasMultipleWords);
-            const isPrecise = hasKeyword && hasMultipleWords;
+            const isLongEnough = explanation.length >= 6;
+            const hasMultipleWords = explanation.split(' ').length >= 2;
             
             return {
-                correct: isCorrect,
-                precise: isPrecise,
-                explanation_type: 'normal',
-                needs_correction: false,
-                corrected_explanation: "",
-                feedback: isCorrect ? (isPrecise ? "Gut erklärt!" : "Richtig, aber könnte spezifischer sein.") : "Versuche es nochmal anders."
+                correct: hasKeyword || (isLongEnough && hasMultipleWords),
+                precise: hasKeyword && hasMultipleWords,
+                feedback: hasKeyword ? "Gut erklärt!" : "Versuche es spezifischer."
             };
         }
 
@@ -667,14 +526,14 @@ Remember: You are ONLY evaluating "${word}", not any other word.`;
                     evaluation = evaluateWithoutAI(word, explanation);
                 }
                 
-                showFeedback(evaluation, explanation);
+                showFeedback(evaluation);
                 
                 // Wort als abgeschlossen markieren wenn korrekt und präzise
                 if (evaluation.correct && evaluation.precise) {
                     markWordCompleted();
                     setTimeout(() => {
                         nextWord();
-                    }, 2500); // Etwas länger Zeit zum Lesen
+                    }, 2500);
                 } else {
                     // Bei falscher Antwort: Feld leeren für neuen Versuch
                     setTimeout(() => {
@@ -692,7 +551,7 @@ Remember: You are ONLY evaluating "${word}", not any other word.`;
             }
         }
 
-        function showFeedback(evaluation, originalExplanation) {
+        function showFeedback(evaluation) {
             const feedbackArea = document.getElementById('feedbackArea');
             
             let feedbackClass = 'feedback-correct';
@@ -709,36 +568,11 @@ Remember: You are ONLY evaluating "${word}", not any other word.`;
                 title = 'Zu ungenau';
             }
             
-            // Icon je nach Erklärungstyp anpassen
-            let typeIcon = '';
-            let typeText = '';
-            if (evaluation.explanation_type === 'synonym') {
-                typeIcon = '🔄';
-                typeText = 'Synonym erkannt';
-            } else if (evaluation.explanation_type === 'antonym') {
-                typeIcon = '↔️';
-                typeText = 'Antonym erkannt';
-            } else {
-                typeIcon = '📝';
-                typeText = 'Erklärung';
-            }
-            
-            let correctionHtml = '';
-            if (evaluation.needs_correction && evaluation.corrected_explanation) {
-                correctionHtml = `
-                    <div class="p-3 bg-blue-50 rounded-lg">
-                        <div class="font-medium text-blue-700 mb-1">📝 Sprachliche Korrektur:</div>
-                        <div class="text-blue-600">${evaluation.corrected_explanation}</div>
-                    </div>
-                `;
-            }
-            
             feedbackArea.innerHTML = `
                 <div class="${feedbackClass} p-4 rounded-lg mb-4">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="text-2xl">${icon}</span>
                         <span class="font-bold text-lg">${title}</span>
-                        <span class="text-sm opacity-75">${typeIcon} ${typeText}</span>
                     </div>
                     <p class="mb-2">${evaluation.feedback}</p>
                 </div>
@@ -757,18 +591,12 @@ Remember: You are ONLY evaluating "${word}", not any other word.`;
                             ${evaluation.precise ? 'Präzise genug' : 'Zu allgemein - sei spezifischer!'}
                         </div>
                     </div>
-                    
-                    ${correctionHtml}
                 </div>
                 
                 ${!evaluation.correct || !evaluation.precise ? `
                 <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div class="text-yellow-800 text-sm">
-                        💡 <strong>Tipp:</strong> ${!evaluation.correct ? 
-                            (evaluation.explanation_type === 'synonym' ? 'Das ist kein passendes Synonym.' :
-                             evaluation.explanation_type === 'antonym' ? 'Das ist kein passendes Antonym.' :
-                             'Überdenke, was das Wort wirklich bedeutet.') : 
-                            'Füge mehr Details hinzu, um spezifischer zu werden.'}
+                        💡 <strong>Tipp:</strong> ${!evaluation.correct ? 'Überdenke, was das Wort wirklich bedeutet.' : 'Füge mehr Details hinzu, um spezifischer zu werden.'}
                     </div>
                 </div>
                 ` : ''}
