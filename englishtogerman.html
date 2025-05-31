@@ -217,7 +217,8 @@
                     </button>
                 </div>
                 <div class="mt-2 text-sm text-gray-600">
-                    Drücke Enter oder klicke ✓ um zu bestätigen
+                    Drücke Enter oder klicke ✓ um zu bestätigen<br>
+                    <span class="text-xs text-gray-500">Viele Antworten möglich! Z.B. für SCIENCE: "Wissenschaft", "Naturwissenschaft", "Forschung"</span>
                 </div>
             </div>
         </div>
@@ -258,33 +259,46 @@
     </div>
 
     <script>
-        // Wortpaare (Englisch -> Deutsch)
+        // Wortpaare (Englisch -> Deutsch mit VIELEN möglichen Übersetzungen)
         const wordPairs = {
-            'SHOES': 'Schuhe',
-            'WATCH': 'Uhr', 
-            'STUDENT': 'Schüler',
-            'SCHOOL': 'Schule',
-            'FRENCH': 'Französisch',
-            'GOOD': 'Gut',
-            'PRACTICE': 'Üben',
-            'BELT': 'Gürtel',
-            'CAP': 'Mütze',
-            'ART': 'Kunst',
-            'SCIENCE': 'Naturwissenschaft',
-            'HISTORY': 'Geschichte',
-            'MATHS': 'Mathematik',
-            'GEOGRAPHY': 'Geografie',
-            'SUBJECT': 'Fach',
-            'BACKPACK': 'Rucksack',
-            'CLOTHING': 'Kleidung',
-            'BLOUSE': 'Bluse',
-            'JUMPER': 'Pullover',
-            'WEEKEND': 'Wochenende',
-            'EVERYDAY': 'Alltag',
-            'EXCITING': 'Aufregend',
-            'INTERESTED': 'Interessiert',
-            'PASSIONATE': 'Leidenschaftlich',
-            'PROUD': 'Stolz'
+            'SHOES': ['schuhe', 'schuh', 'turnschuhe', 'sneaker', 'halbschuhe'],
+            'WATCH': ['uhr', 'armbanduhr', 'zeitanzeiger'], 
+            'STUDENT': ['schüler', 'schülerin', 'student', 'studentin', 'lernender', 'lernende'],
+            'SCHOOL': ['schule', 'bildungseinrichtung', 'lehranstalt'],
+            'FRENCH': ['französisch', 'france', 'frankreich'],
+            'GOOD': ['gut', 'gute', 'guter', 'gutes', 'schön', 'prima', 'toll', 'super'],
+            'PRACTICE': ['üben', 'übung', 'praxis', 'training', 'trainieren', 'praktizieren'],
+            'BELT': ['gürtel', 'hosengürtel'],
+            'CAP': ['mütze', 'kappe', 'baseball cap', 'baseballmütze'],
+            'ART': ['kunst', 'malerei', 'zeichnen', 'malen'],
+            'SCIENCE': ['wissenschaft', 'naturwissenschaft', 'naturwissenschaften', 'forschung', 'wissenschaften'],
+            'HISTORY': ['geschichte', 'vergangenheit', 'historisches'],
+            'MATHS': ['mathematik', 'mathe', 'rechnen', 'zahlen'],
+            'GEOGRAPHY': ['geografie', 'geographie', 'erdkunde', 'länder', 'welt'],
+            'SUBJECT': ['fach', 'schulfach', 'unterrichtsfach', 'lehrfach', 'bereich'],
+            'BACKPACK': ['rucksack', 'schulrucksack', 'tasche'],
+            'CLOTHING': ['kleidung', 'bekleidung', 'klamotten', 'anziehsachen', 'sachen'],
+            'BLOUSE': ['bluse', 'hemd', 'oberteil'],
+            'JUMPER': ['pullover', 'pulli', 'sweatshirt', 'sweater'],
+            'WEEKEND': ['wochenende', 'weekend'],
+            'EVERYDAY': ['alltag', 'alltäglich', 'täglich', 'jeden tag', 'jeder tag'],
+            'EXCITING': ['aufregend', 'spannend', 'interessant', 'toll'],
+            'INTERESTED': ['interessiert', 'neugierig'],
+            'PASSIONATE': ['leidenschaftlich', 'begeistert'],
+            'PROUD': ['stolz', 'zufrieden'],
+            'TROUSERS': ['hose', 'hosen', 'lange hose'],
+            'PANTS': ['hose', 'hosen', 'lange hose'],
+            'SUNGLASSES': ['sonnenbrille', 'brille', 'sonnenschutz'],
+            'PLAYGROUND': ['spielplatz', 'schulhof', 'pausenhof'],
+            'FAVOURITE': ['lieblings', 'favorit', 'liebling', 'am liebsten', 'beste', 'bester', 'bestes'],
+            'ALSO': ['auch', 'ebenfalls', 'außerdem', 'zusätzlich'],
+            'PASSION': ['leidenschaft', 'begeisterung'],
+            'EFFORT': ['anstrengung', 'mühe', 'aufwand', 'arbeit', 'bemühung'],
+            'SPEND': ['verbringen', 'ausgeben', 'verwenden'],
+            'FEEL': ['fühlen', 'empfinden', 'spüren'],
+            'JEWELLERY': ['schmuck', 'jewelry'],
+            'INVENTOR': ['erfinder', 'entwickler'],
+            'INVENTION': ['erfindung', 'entwicklung', 'innovation']
         };
 
         // Spielvariablen
@@ -473,9 +487,19 @@
         function submitTranslation() {
             const input = document.getElementById('translationInput');
             const translation = input.value.trim().toLowerCase();
-            const correctTranslation = wordPairs[currentTargetWord].toLowerCase();
+            const possibleTranslations = wordPairs[currentTargetWord];
             
-            if (translation === correctTranslation) {
+            console.log('Eingabe:', translation);
+            console.log('Mögliche Antworten für', currentTargetWord, ':', possibleTranslations);
+            
+            // Prüfe ob die Eingabe einer der möglichen Übersetzungen entspricht
+            const isCorrect = possibleTranslations && possibleTranslations.some(correct => 
+                translation === correct.toLowerCase()
+            );
+            
+            console.log('Ist korrekt:', isCorrect);
+            
+            if (isCorrect) {
                 // Richtige Antwort
                 combo++;
                 maxCombo = Math.max(maxCombo, combo);
@@ -492,15 +516,20 @@
                 setTimeout(() => {
                     document.querySelector('.combo-display').classList.remove('combo-display');
                 }, 500);
+                
+                // Eingabefeld sofort leeren und Übersetzungsbereich ausblenden
+                input.value = '';
+                document.getElementById('translationArea').classList.add('hidden');
+                currentTargetWord = null;
             } else {
                 // Falsche Antwort
                 combo = 0;
                 loseLife();
+                
+                // Bei falscher Antwort: Feld für neuen Versuch leeren, aber Bereich offen lassen
+                input.value = '';
             }
             
-            input.value = '';
-            document.getElementById('translationArea').classList.add('hidden');
-            currentTargetWord = null;
             updateDisplay();
         }
 
