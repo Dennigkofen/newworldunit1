@@ -1,0 +1,602 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Clock, Trophy, RotateCcw, Star, Check } from 'lucide-react';
+
+const CrosswordPuzzleGame = () => {
+  const wordData = [
+    { word: 'CLOTHING', clue: 'General term for garments and apparel' },
+    { word: 'JUMPER', clue: 'Knitted garment worn on the upper body (BE)' },
+    { word: 'SHOES', clue: 'Footwear that protects and covers the feet' },
+    { word: 'TROUSERS', clue: 'Leg coverings from waist to ankles (BE)' },
+    { word: 'PANTS', clue: 'Leg coverings from waist to ankles (AE)' },
+    { word: 'BLOUSE', clue: 'Womans upper garment, typically loose-fitting' },
+    { word: 'CAP', clue: 'Head covering with a visor' },
+    { word: 'BELT', clue: 'Strap worn around the waist' },
+    { word: 'WATCH', clue: 'Timepiece worn on the wrist' },
+    { word: 'STUDENT', clue: 'Person who is learning at school or university' },
+    { word: 'SUNGLASSES', clue: 'Dark glasses worn to protect eyes from bright light' },
+    { word: 'BACKPACK', clue: 'Bag carried on the back, often used by hikers' },
+    { word: 'PLAYGROUND', clue: 'Outdoor area where children play at school' },
+    { word: 'SCHOOL', clue: 'Educational institution for children' },
+    { word: 'INTERESTED', clue: 'Showing curiosity or concern about something' },
+    { word: 'GOOD', clue: 'Of high quality; opposite of bad' },
+    { word: 'FAVOURITE', clue: 'Most preferred or liked (BE spelling)' },
+    { word: 'FAVORITE', clue: 'Most preferred or liked (AE spelling)' },
+    { word: 'SUBJECT', clue: 'Topic of study in school curriculum' },
+    { word: 'MATHS', clue: 'Subject dealing with numbers and calculations (BE)' },
+    { word: 'SCIENCE', clue: 'Study of the natural world through observation' },
+    { word: 'HISTORY', clue: 'Study of past events and civilizations' },
+    { word: 'ART', clue: 'Creative expression through drawing, painting, etc.' },
+    { word: 'FRENCH', clue: 'Language spoken in France' },
+    { word: 'GEOGRAPHY', clue: 'Study of Earth\'s features and places' },
+    { word: 'ALSO', clue: 'In addition; too; as well' },
+    { word: 'PASSION', clue: 'Strong enthusiasm or intense emotion' },
+    { word: 'PRACTICE', clue: 'To do something repeatedly to improve' },
+    { word: 'EFFORT', clue: 'Energy and determination put into a task' },
+    { word: 'PROUD', clue: 'Feeling satisfaction about an achievement' },
+    { word: 'SPEND', clue: 'To use time or money for something' },
+    { word: 'EVERYDAY', clue: 'Happening each day; daily routine' },
+    { word: 'WEEKEND', clue: 'Saturday and Sunday; end of the work week' },
+    { word: 'FEEL', clue: 'To experience an emotion or sensation' },
+    { word: 'JEWELLERY', clue: 'Decorative items worn for personal adornment (BE)' },
+    { word: 'EXCITING', clue: 'Causing enthusiasm and eagerness' },
+    { word: 'PASSIONATE', clue: 'Showing strong feelings or beliefs' },
+    { word: 'INVENTOR', clue: 'Person who creates new devices or processes' },
+    { word: 'INVENTION', clue: 'Something that has been created or designed' }
+  ];
+
+  const [selectedWords, setSelectedWords] = useState([]);
+  const [grid, setGrid] = useState([]);
+  const [clues, setClues] = useState({ across: [], down: [] });
+  const [userAnswers, setUserAnswers] = useState({});
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [selectedDirection, setSelectedDirection] = useState('across');
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameFinished, setGameFinished] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [playerName, setPlayerName] = useState('');
+  const [showNameInput, setShowNameInput] = useState(false);
+
+  const GRID_SIZE = 15;
+
+  // Timer effect
+  useEffect(() => {
+    let interval;
+    if (gameStarted && !gameFinished && startTime) {
+      interval = setInterval(() => {
+        setCurrentTime(Date.now() - startTime);
+      }, 100);
+    }
+    return () => clearInterval(interval);
+  }, [gameStarted, gameFinished, startTime]);
+
+  const createEmptyGrid = () => {
+    return Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill({ type: 'black' }));
+  };
+
+  const shuffleArray = (array) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  const canPlaceWord = (grid, word, row, col, direction) => {
+    const wordLength = word.length;
+    
+    if (direction === 'across') {
+      if (col + wordLength > GRID_SIZE) return false;
+      
+      for (let i = 0; i < wordLength; i++) {
+        const cell = grid[row][col + i];
+        if (cell.type === 'letter' && cell.letter !== word[i]) {
+          return false;
+        }
+      }
+      
+      // Check boundaries
+      if (col > 0 && grid[row][col - 1].type === 'letter') return false;
+      if (col + wordLength < GRID_SIZE && grid[row][col + wordLength].type === 'letter') return false;
+      
+      return true;
+    } else {
+      if (row + wordLength > GRID_SIZE) return false;
+      
+      for (let i = 0; i < wordLength; i++) {
+        const cell = grid[row + i][col];
+        if (cell.type === 'letter' && cell.letter !== word[i]) {
+          return false;
+        }
+      }
+      
+      if (row > 0 && grid[row - 1][col].type === 'letter') return false;
+      if (row + wordLength < GRID_SIZE && grid[row + wordLength][col].type === 'letter') return false;
+      
+      return true;
+    }
+  };
+
+  const placeWord = (grid, wordData, row, col, direction, wordNumber) => {
+    const newGrid = grid.map(row => row.map(cell => ({ ...cell })));
+    const word = wordData.word;
+    
+    for (let i = 0; i < word.length; i++) {
+      const r = direction === 'across' ? row : row + i;
+      const c = direction === 'across' ? col + i : col;
+      
+      if (newGrid[r][c].type === 'black') {
+        newGrid[r][c] = {
+          type: 'letter',
+          letter: word[i],
+          words: [{ number: wordNumber, direction, position: i }],
+          number: i === 0 ? wordNumber : undefined
+        };
+      } else {
+        // Intersection
+        newGrid[r][c].words.push({ number: wordNumber, direction, position: i });
+        if (i === 0) {
+          newGrid[r][c].number = wordNumber;
+        }
+      }
+    }
+    
+    return newGrid;
+  };
+
+  const generateCrossword = useCallback(() => {
+    const shuffled = shuffleArray(wordData);
+    const selected = shuffled.slice(0, 10);
+    setSelectedWords(selected);
+    
+    let grid = createEmptyGrid();
+    const placedWords = [];
+    let wordNumber = 1;
+    
+    // Place first word in center
+    const firstWord = selected[0];
+    const startRow = Math.floor(GRID_SIZE / 2);
+    const startCol = Math.floor((GRID_SIZE - firstWord.word.length) / 2);
+    
+    grid = placeWord(grid, firstWord, startRow, startCol, 'across', wordNumber);
+    placedWords.push({
+      ...firstWord,
+      row: startRow,
+      col: startCol,
+      direction: 'across',
+      number: wordNumber++
+    });
+    
+    // Try to place remaining words
+    for (let wordIdx = 1; wordIdx < selected.length && wordIdx < 10; wordIdx++) {
+      const currentWord = selected[wordIdx];
+      let placed = false;
+      let attempts = 0;
+      const maxAttempts = 100;
+      
+      while (!placed && attempts < maxAttempts) {
+        attempts++;
+        
+        // Try intersections with placed words
+        for (let placedWord of placedWords) {
+          if (placed) break;
+          
+          for (let i = 0; i < placedWord.word.length; i++) {
+            for (let j = 0; j < currentWord.word.length; j++) {
+              if (placedWord.word[i] === currentWord.word[j]) {
+                let newRow, newCol, newDirection;
+                
+                if (placedWord.direction === 'across') {
+                  newDirection = 'down';
+                  newCol = placedWord.col + i;
+                  newRow = placedWord.row - j;
+                } else {
+                  newDirection = 'across';
+                  newRow = placedWord.row + i;
+                  newCol = placedWord.col - j;
+                }
+                
+                if (newRow >= 0 && newCol >= 0 && newRow < GRID_SIZE && newCol < GRID_SIZE &&
+                    canPlaceWord(grid, currentWord.word, newRow, newCol, newDirection)) {
+                  
+                  grid = placeWord(grid, currentWord, newRow, newCol, newDirection, wordNumber);
+                  placedWords.push({
+                    ...currentWord,
+                    row: newRow,
+                    col: newCol,
+                    direction: newDirection,
+                    number: wordNumber++
+                  });
+                  placed = true;
+                  break;
+                }
+              }
+            }
+            if (placed) break;
+          }
+        }
+      }
+    }
+    
+    // Create clues sorted by number
+    const acrossClues = placedWords
+      .filter(word => word.direction === 'across')
+      .sort((a, b) => a.number - b.number);
+      
+    const downClues = placedWords
+      .filter(word => word.direction === 'down')
+      .sort((a, b) => a.number - b.number);
+    
+    setGrid(grid);
+    setClues({ across: acrossClues, down: downClues });
+    setUserAnswers({});
+  }, []);
+
+  const startNewGame = () => {
+    generateCrossword();
+    setStartTime(Date.now());
+    setEndTime(null);
+    setCurrentTime(0);
+    setGameStarted(true);
+    setGameFinished(false);
+    setShowNameInput(false);
+    setSelectedCell(null);
+    setSelectedWord(null);
+  };
+
+  const handleCellClick = (row, col) => {
+    const cell = grid[row][col];
+    if (cell.type !== 'letter') return;
+    
+    setSelectedCell({ row, col });
+    
+    // Find word to select
+    if (cell.words && cell.words.length > 0) {
+      const currentWordIndex = cell.words.findIndex(w => w.direction === selectedDirection);
+      if (currentWordIndex !== -1) {
+        setSelectedWord(cell.words[currentWordIndex]);
+      } else {
+        setSelectedWord(cell.words[0]);
+        setSelectedDirection(cell.words[0].direction);
+      }
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (!selectedCell) return;
+    
+    const key = e.key.toUpperCase();
+    if (key.match(/^[A-Z]$/)) {
+      const cellKey = `${selectedCell.row}-${selectedCell.col}`;
+      setUserAnswers(prev => ({
+        ...prev,
+        [cellKey]: key
+      }));
+      
+      // Move to next cell
+      moveToNextCell();
+    } else if (key === 'BACKSPACE') {
+      const cellKey = `${selectedCell.row}-${selectedCell.col}`;
+      setUserAnswers(prev => {
+        const newAnswers = { ...prev };
+        delete newAnswers[cellKey];
+        return newAnswers;
+      });
+    }
+  };
+
+  const moveToNextCell = () => {
+    if (!selectedCell || !selectedWord) return;
+    
+    const { row, col } = selectedCell;
+    let nextRow = row;
+    let nextCol = col;
+    
+    if (selectedDirection === 'across') {
+      nextCol++;
+    } else {
+      nextRow++;
+    }
+    
+    if (nextRow < GRID_SIZE && nextCol < GRID_SIZE && 
+        grid[nextRow][nextCol].type === 'letter') {
+      setSelectedCell({ row: nextRow, col: nextCol });
+    }
+  };
+
+  const checkCompletion = () => {
+    const allClues = [...clues.across, ...clues.down];
+    
+    for (let clue of allClues) {
+      const userWord = Array.from({ length: clue.word.length }, (_, i) => {
+        const cellRow = clue.direction === 'across' ? clue.row : clue.row + i;
+        const cellCol = clue.direction === 'across' ? clue.col + i : clue.col;
+        return userAnswers[`${cellRow}-${cellCol}`] || '';
+      }).join('');
+      
+      if (userWord !== clue.word) {
+        return false;
+      }
+    }
+    
+    return allClues.length > 0;
+  };
+
+  useEffect(() => {
+    if (gameStarted && checkCompletion() && !gameFinished) {
+      setEndTime(Date.now());
+      setGameFinished(true);
+      setShowNameInput(true);
+    }
+  }, [userAnswers, gameStarted, gameFinished]);
+
+  useEffect(() => {
+    if (gameStarted) {
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+    }
+  }, [selectedCell, selectedWord, selectedDirection, gameStarted]);
+
+  const loadLeaderboard = async () => {
+    try {
+      const response = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json');
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          const leaderboardArray = Object.values(data).sort((a, b) => a.time - b.time).slice(0, 10);
+          setLeaderboard(leaderboardArray);
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Bestenliste:', error);
+    }
+  };
+
+  const saveScore = async (name, time) => {
+    try {
+      const score = {
+        name: name,
+        time: time,
+        timestamp: Date.now()
+      };
+      
+      await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(score)
+      });
+      
+      loadLeaderboard();
+    } catch (error) {
+      console.error('Fehler beim Speichern der Punktzahl:', error);
+    }
+  };
+
+  const handleSubmitScore = async () => {
+    if (playerName.trim() && endTime && startTime) {
+      const finalTime = endTime - startTime;
+      await saveScore(playerName.trim(), finalTime);
+      setShowNameInput(false);
+    }
+  };
+
+  const formatTime = (milliseconds) => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getCellHighlight = (row, col) => {
+    if (!selectedWord || !selectedCell) return '';
+    
+    const cell = grid[row][col];
+    if (cell.type !== 'letter') return '';
+    
+    // Highlight current word
+    const wordInCell = cell.words?.find(w => w.number === selectedWord.number && w.direction === selectedWord.direction);
+    if (wordInCell) {
+      if (selectedCell.row === row && selectedCell.col === col) {
+        return 'bg-blue-300 ring-2 ring-blue-500';
+      }
+      return 'bg-blue-100';
+    }
+    
+    return '';
+  };
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+            <Star className="text-yellow-500" />
+            Englisches Kreuzworträtsel
+            <Star className="text-yellow-500" />
+          </h1>
+          <p className="text-gray-600">Löse das Kreuzworträtsel mit englischen Hinweisen!</p>
+        </div>
+
+        {/* Game Controls */}
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <button
+            onClick={startNewGame}
+            className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            <RotateCcw size={20} />
+            {gameStarted ? 'Neues Rätsel' : 'Rätsel starten'}
+          </button>
+          
+          {gameStarted && (
+            <div className="bg-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
+              <Clock size={20} className="text-gray-600" />
+              <span className="font-mono text-lg">
+                {formatTime(gameFinished ? (endTime - startTime) : currentTime)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Game Area */}
+        {gameStarted && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Crossword Grid */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="inline-block border-2 border-gray-800">
+                  {grid.map((row, rowIndex) => (
+                    <div key={rowIndex} className="flex">
+                      {row.map((cell, colIndex) => (
+                        <div
+                          key={`${rowIndex}-${colIndex}`}
+                          className={`
+                            w-8 h-8 border border-gray-400 relative cursor-pointer text-xs font-bold
+                            ${cell.type === 'black' ? 'bg-black' : 'bg-white'}
+                            ${getCellHighlight(rowIndex, colIndex)}
+                          `}
+                          onClick={() => handleCellClick(rowIndex, colIndex)}
+                        >
+                          {cell.type === 'letter' && (
+                            <>
+                              {cell.number && (
+                                <span className="absolute top-0 left-0 text-xs leading-none text-black font-bold">
+                                  {cell.number}
+                                </span>
+                              )}
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-black font-bold">
+                                  {userAnswers[`${rowIndex}-${colIndex}`] || ''}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 text-sm text-gray-600">
+                  Klicke auf eine Zelle und tippe den Buchstaben. Verwende die Pfeiltasten oder klicke, um zwischen den Wörtern zu wechseln.
+                </div>
+              </div>
+            </div>
+
+            {/* Clues */}
+            <div className="space-y-6">
+              {/* Across Clues */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold mb-4 text-purple-700">Waagerecht</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {clues.across.map((clue) => (
+                    <div key={`across-${clue.number}`} className="text-sm">
+                      <span className="font-bold text-purple-600">{clue.number}.</span>
+                      <span className="ml-2">{clue.clue}</span>
+                      <span className="ml-2 text-gray-500">({clue.word.length})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Down Clues */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold mb-4 text-purple-700">Senkrecht</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {clues.down.map((clue) => (
+                    <div key={`down-${clue.number}`} className="text-sm">
+                      <span className="font-bold text-purple-600">{clue.number}.</span>
+                      <span className="ml-2">{clue.clue}</span>
+                      <span className="ml-2 text-gray-500">({clue.word.length})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Name Input for Leaderboard */}
+        {showNameInput && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4">
+              <h3 className="text-2xl font-bold text-purple-600 mb-4 text-center flex items-center justify-center gap-2">
+                <Check className="text-green-500" />
+                Glückwunsch!
+              </h3>
+              <p className="text-center text-gray-600 mb-4">
+                Du hast das Kreuzworträtsel in {formatTime(endTime - startTime)} gelöst!
+              </p>
+              <input
+                type="text"
+                placeholder="Dein Name für die Bestenliste"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+                maxLength={20}
+              />
+              <button
+                onClick={handleSubmitScore}
+                disabled={!playerName.trim()}
+                className="w-full bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors"
+              >
+                Punktzahl speichern
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Leaderboard */}
+        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 flex items-center justify-center gap-2">
+            <Trophy className="text-yellow-500" />
+            Top 10 Bestenliste - Kreuzworträtsel
+          </h2>
+          {leaderboard.length > 0 ? (
+            <div className="space-y-2">
+              {leaderboard.map((entry, index) => (
+                <div 
+                  key={index}
+                  className={`flex justify-between items-center p-3 rounded-lg ${
+                    index === 0 ? 'bg-yellow-100 border-2 border-yellow-300' :
+                    index === 1 ? 'bg-gray-100 border-2 border-gray-300' :
+                    index === 2 ? 'bg-orange-100 border-2 border-orange-300' :
+                    'bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`font-bold text-lg ${
+                      index === 0 ? 'text-yellow-600' :
+                      index === 1 ? 'text-gray-600' :
+                      index === 2 ? 'text-orange-600' :
+                      'text-gray-500'
+                    }`}>
+                      #{index + 1}
+                    </span>
+                    <span className="font-medium">{entry.name}</span>
+                  </div>
+                  <span className="font-mono text-lg font-bold text-purple-600">
+                    {formatTime(entry.time)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">Noch keine Einträge vorhanden</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CrosswordPuzzleGame;
