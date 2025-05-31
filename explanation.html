@@ -17,13 +17,12 @@
         
         .word-card {
             transition: all 0.5s ease;
-            transform-style: preserve-3d;
         }
         
         .word-card.completed {
-            transform: rotateY(180deg);
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
+            transform: scale(0.95);
         }
         
         .feedback-correct {
@@ -41,13 +40,16 @@
             color: white;
         }
         
-        .explanation-box {
-            min-height: 120px;
-            resize: vertical;
+        .ai-thinking {
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 200%;
+            animation: gradient 2s ease infinite;
         }
         
-        .loading-dots {
-            display: inline-block;
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         
         .loading-dots::after {
@@ -61,10 +63,6 @@
             60%, 100% { content: '...'; }
         }
         
-        .trophy-gold { color: #FFD700; }
-        .trophy-silver { color: #C0C0C0; }
-        .trophy-bronze { color: #CD7F32; }
-        
         .celebration {
             animation: celebrate 0.8s ease-out;
         }
@@ -73,26 +71,6 @@
             0% { transform: scale(0.8); opacity: 0; }
             50% { transform: scale(1.1); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .progress-ring {
-            transform: rotate(-90deg);
-        }
-        
-        .progress-ring-circle {
-            transition: stroke-dashoffset 0.5s ease;
-        }
-        
-        .ai-thinking {
-            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
-            background-size: 200% 200%;
-            animation: gradient 2s ease infinite;
-        }
-        
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
     </style>
 </head>
@@ -125,23 +103,15 @@
             </div>
         </div>
 
-        <!-- Progress Ring -->
+        <!-- Progress -->
         <div id="progressContainer" class="flex justify-center mb-8 hidden">
             <div class="game-card rounded-xl p-6 shadow-lg">
                 <div class="flex items-center gap-4">
-                    <div class="relative">
-                        <svg class="progress-ring w-16 h-16">
-                            <circle class="text-gray-200" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32"/>
-                            <circle id="progressCircle" class="progress-ring-circle text-indigo-500" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
-                        </svg>
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <span id="progressText" class="text-sm font-bold text-gray-700">0/10</span>
-                        </div>
+                    <div class="text-lg font-bold text-gray-800">Fortschritt</div>
+                    <div class="bg-gray-200 rounded-full h-4 w-64">
+                        <div id="progressBar" class="bg-indigo-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
-                    <div>
-                        <div class="text-lg font-bold text-gray-800">Fortschritt</div>
-                        <div class="text-sm text-gray-600">Wörter erklärt</div>
-                    </div>
+                    <span id="progressText" class="text-sm font-bold text-gray-700">0/10</span>
                 </div>
             </div>
         </div>
@@ -158,7 +128,7 @@
                 
                 <div class="space-y-4">
                     <textarea id="explanationInput" 
-                             class="explanation-box w-full p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+                             class="w-full p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
                              placeholder="Type your explanation in English here..."
                              rows="4"></textarea>
                     
@@ -230,10 +200,30 @@
         </div>
     </div>
 
+    <!-- API Error Modal -->
+    <div id="apiErrorModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="game-card p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="text-center">
+                <div class="text-6xl mb-4">⚠️</div>
+                <h3 class="text-2xl font-bold text-red-600 mb-4">API-Problem</h3>
+                <p class="text-gray-700 mb-6">Die KI-Bewertung funktioniert momentan nicht. Möchtest du trotzdem spielen? Deine Antworten werden automatisch als korrekt gewertet.</p>
+                
+                <div class="flex gap-3">
+                    <button onclick="continueWithoutAI()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-lg font-bold transition-colors">
+                        ✅ Trotzdem spielen
+                    </button>
+                    <button onclick="cancelGame()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition-colors">
+                        ❌ Abbrechen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Gemini API Configuration
+        // API Configuration
         const GEMINI_API_KEY = 'AIzaSyAJ52b330dLaXxZPcLPx8tt7jdl0sdB-2k';
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
 
         // Wortliste
         const wordList = [
@@ -252,6 +242,7 @@
         let startTime = null;
         let gameActive = false;
         let timerInterval = null;
+        let aiMode = true; // true = mit KI, false = ohne KI
 
         // Hilfsfunktionen
         function shuffleArray(array) {
@@ -279,21 +270,76 @@
 
         function updateProgress() {
             const completed = completedWords.length;
+            const progress = (completed / 10) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
             document.getElementById('progressText').textContent = `${completed}/10`;
-            
-            const progressPercent = completed / 10;
-            const circumference = 150.8;
-            const offset = circumference - (progressPercent * circumference);
-            document.getElementById('progressCircle').style.strokeDashoffset = offset;
         }
 
-        // Navigation
         function goHome() {
             window.location.href = 'index.html';
         }
 
-        // Spiel starten
-        function startNewGame() {
+        // API-Test und Spiel-Start
+        async function testAPI() {
+            try {
+                console.log('Testing API...');
+                const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: "Hello, respond with just 'OK' to test the connection."
+                            }]
+                        }]
+                    })
+                });
+
+                console.log('API Response Status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('API Test Success:', data);
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    console.error('API Test Failed:', response.status, errorText);
+                    return false;
+                }
+            } catch (error) {
+                console.error('API Test Error:', error);
+                return false;
+            }
+        }
+
+        async function startNewGame() {
+            console.log('Starting new game...');
+            
+            // API testen
+            const apiWorks = await testAPI();
+            
+            if (!apiWorks) {
+                document.getElementById('apiErrorModal').classList.remove('hidden');
+                return;
+            }
+            
+            initializeGame();
+        }
+
+        function continueWithoutAI() {
+            console.log('Continuing without AI...');
+            aiMode = false;
+            document.getElementById('apiErrorModal').classList.add('hidden');
+            initializeGame();
+        }
+
+        function cancelGame() {
+            document.getElementById('apiErrorModal').classList.add('hidden');
+        }
+
+        function initializeGame() {
             const shuffled = shuffleArray(wordList);
             selectedWords = shuffled.slice(0, 10);
             currentWordIndex = 0;
@@ -314,6 +360,8 @@
             createWordsOverview();
             updateProgress();
             clearFeedback();
+            
+            console.log('Game initialized with words:', selectedWords);
         }
 
         function showCurrentWord() {
@@ -352,134 +400,112 @@
             `;
         }
 
-        // KI-Bewertung
-        async function evaluateExplanation(word, explanation) {
-            const prompt = `
-You are an English teacher evaluating a student's explanation of the word "${word}".
+        // KI-Bewertung (komplett neu geschrieben)
+        async function evaluateWithAI(word, explanation) {
+            try {
+                console.log(`Evaluating "${explanation}" for word "${word}"`);
+                
+                const prompt = `Evaluate this English explanation for the word "${word}":
 
-Student's explanation: "${explanation}"
+Student explanation: "${explanation}"
 
-Please evaluate the explanation based on these criteria:
-1. CORRECTNESS: Is the explanation factually correct for the word "${word}"?
-2. PRECISION: Is the explanation specific enough? (e.g., "something you wear on feet" is better than just "something you wear")
-3. GRAMMAR: Provide a corrected version if there are spelling or grammar errors, but be lenient with minor mistakes.
-
-Respond ONLY in this exact JSON format:
+Respond ONLY with valid JSON in this exact format:
 {
-  "correct": true/false,
-  "precise": true/false,
-  "corrected_explanation": "corrected version here (or same if perfect)",
-  "feedback": "brief encouraging feedback in German"
+  "correct": true,
+  "precise": true,
+  "corrected_explanation": "${explanation}",
+  "feedback": "Sehr gut! Deine Erklärung ist korrekt und präzise."
 }
 
-Be encouraging and constructive. Minor spelling errors should not affect correctness or precision scores.
-`;
+Rules:
+- correct: true if explanation is factually right for "${word}"
+- precise: true if specific enough (not too general)
+- corrected_explanation: fix spelling/grammar but keep meaning
+- feedback: encouraging German comment (max 50 words)
 
-            try {
-                const response = await fetch(GEMINI_API_URL, {
+JSON only, no other text.`;
+
+                const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         contents: [{
-                            parts: [{
-                                text: prompt
-                            }]
+                            parts: [{ text: prompt }]
                         }],
                         generationConfig: {
-                            temperature: 0.3,
-                            topK: 1,
-                            topP: 1,
-                            maxOutputTokens: 1024,
-                        },
-                        safetySettings: [
-                            {
-                                category: "HARM_CATEGORY_HARASSMENT",
-                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                            },
-                            {
-                                category: "HARM_CATEGORY_HATE_SPEECH",
-                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                            },
-                            {
-                                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                            },
-                            {
-                                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                            }
-                        ]
+                            temperature: 0.1,
+                            maxOutputTokens: 200
+                        }
                     })
                 });
 
-                console.log('Response status:', response.status);
-                
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('API Error:', errorText);
-                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
                 }
 
                 const data = await response.json();
-                console.log('API Response:', data);
+                console.log('Full API Response:', data);
                 
-                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                    throw new Error('Invalid response structure from API');
+                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    throw new Error('Invalid API response structure');
                 }
-                
-                const aiResponse = data.candidates[0].content.parts[0].text;
-                console.log('AI Response Text:', aiResponse);
-                
-                // Parse JSON response
-                const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0]);
-                    console.log('Parsed JSON:', parsed);
-                    return parsed;
-                } else {
-                    console.error('No JSON found in response:', aiResponse);
-                    throw new Error('Invalid JSON response from AI');
+
+                const aiText = data.candidates[0].content.parts[0].text.trim();
+                console.log('AI Response Text:', aiText);
+
+                // JSON extrahieren
+                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) {
+                    throw new Error('No JSON found in AI response');
                 }
+
+                const result = JSON.parse(jsonMatch[0]);
+                console.log('Parsed evaluation:', result);
+
+                // Validierung
+                if (typeof result.correct !== 'boolean' || typeof result.precise !== 'boolean') {
+                    throw new Error('Invalid evaluation format');
+                }
+
+                return result;
+
             } catch (error) {
-                console.error('AI evaluation error:', error);
-                
-                // Bessere Fallback-Logik basierend auf einfachen Regeln
-                const isCorrect = checkBasicCorrectness(word, explanation);
-                const isPrecise = explanation.length > 10 && explanation.includes(' '); // Mindestens zwei Wörter
-                
-                return {
-                    correct: isCorrect,
-                    precise: isPrecise,
-                    corrected_explanation: explanation,
-                    feedback: `Die KI-Bewertung ist momentan nicht verfügbar. Basierend auf einfachen Regeln: ${isCorrect && isPrecise ? 'Deine Erklärung sieht gut aus!' : isCorrect ? 'Korrekt, aber versuche spezifischer zu sein.' : 'Versuche eine genauere Erklärung.'}`
-                };
+                console.error('AI Evaluation failed:', error);
+                throw error;
             }
         }
 
-        // Einfache Backup-Bewertung falls API nicht funktioniert
-        function checkBasicCorrectness(word, explanation) {
+        // Fallback-Bewertung ohne KI
+        function evaluateWithoutAI(word, explanation) {
+            // Einfache Regeln für Fallback
             const wordLower = word.toLowerCase();
-            const explanationLower = explanation.toLowerCase();
+            const expLower = explanation.toLowerCase();
             
-            // Einfache Keyword-basierte Prüfung
-            const keywordMap = {
+            // Basis-Keywords für häufige Wörter
+            const keywords = {
                 'shoes': ['foot', 'feet', 'wear', 'walk'],
-                'watch': ['time', 'wrist', 'clock', 'hour'],
+                'watch': ['time', 'wrist', 'clock'],
                 'clothing': ['wear', 'clothes', 'garment'],
-                'school': ['learn', 'student', 'education', 'teach'],
-                'student': ['learn', 'school', 'study', 'education'],
-                'backpack': ['bag', 'carry', 'back', 'school'],
-                'belt': ['waist', 'around', 'wear', 'leather'],
-                'cap': ['head', 'hat', 'wear'],
-                'sunglasses': ['eyes', 'sun', 'dark', 'bright'],
-                'jumper': ['wear', 'warm', 'sweater', 'pull'],
-                'blouse': ['shirt', 'woman', 'wear', 'top']
+                'school': ['learn', 'education', 'student'],
+                'student': ['learn', 'study', 'school'],
+                'backpack': ['bag', 'carry', 'back'],
+                'belt': ['waist', 'around', 'wear'],
+                'sunglasses': ['sun', 'eyes', 'dark', 'bright']
             };
             
-            const keywords = keywordMap[wordLower] || [];
-            return keywords.some(keyword => explanationLower.includes(keyword)) || explanation.length > 5;
+            const wordKeywords = keywords[wordLower] || [];
+            const hasKeyword = wordKeywords.some(kw => expLower.includes(kw));
+            const isLongEnough = explanation.length >= 8;
+            const hasMultipleWords = explanation.split(' ').length >= 3;
+            
+            return {
+                correct: hasKeyword || isLongEnough,
+                precise: hasMultipleWords && isLongEnough,
+                corrected_explanation: explanation,
+                feedback: hasKeyword ? "Gut! Das Wort passt zur Beschreibung." : "Okay, aber versuche spezifischer zu sein."
+            };
         }
 
         async function submitExplanation() {
@@ -491,18 +517,23 @@ Be encouraging and constructive. Minor spelling errors should not affect correct
 
             const word = selectedWords[currentWordIndex];
             
-            // UI für KI-Verarbeitung
+            // UI für Verarbeitung
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('aiThinking').classList.remove('hidden');
             document.getElementById('feedbackArea').innerHTML = '';
 
             try {
-                const evaluation = await evaluateExplanation(word, explanation);
+                let evaluation;
                 
-                // Feedback anzeigen
+                if (aiMode) {
+                    evaluation = await evaluateWithAI(word, explanation);
+                } else {
+                    evaluation = evaluateWithoutAI(word, explanation);
+                }
+                
                 showFeedback(evaluation, explanation);
                 
-                // Überprüfen ob Wort abgeschlossen ist
+                // Wort als abgeschlossen markieren wenn korrekt und präzise
                 if (evaluation.correct && evaluation.precise) {
                     markWordCompleted();
                     setTimeout(() => {
@@ -578,7 +609,7 @@ Be encouraging and constructive. Minor spelling errors should not affect correct
                         <span class="text-2xl">⚠️</span>
                         <span class="font-bold text-lg">Technischer Fehler</span>
                     </div>
-                    <p>Die KI-Bewertung ist momentan nicht verfügbar. Versuche es bitte erneut.</p>
+                    <p>Die KI-Bewertung ist momentan nicht verfügbar. Versuche es bitte erneut oder spiele ohne KI weiter.</p>
                 </div>
             `;
         }
@@ -628,7 +659,8 @@ Be encouraging and constructive. Minor spelling errors should not affect correct
                 const score = {
                     name: name,
                     time: finalTime,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    aiMode: aiMode
                 };
                 
                 await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/explanation-leaderboard.json', {
@@ -678,21 +710,23 @@ Be encouraging and constructive. Minor spelling errors should not affect correct
                 let bgClass = 'bg-gray-50';
                 
                 if (index === 0) {
-                    trophyIcon = '<span class="trophy-gold text-xl">🥇</span>';
+                    trophyIcon = '<span class="text-xl">🥇</span>';
                     bgClass = 'bg-yellow-100 border-yellow-300 border-2';
                 } else if (index === 1) {
-                    trophyIcon = '<span class="trophy-silver text-xl">🥈</span>';
+                    trophyIcon = '<span class="text-xl">🥈</span>';
                     bgClass = 'bg-gray-100 border-gray-300 border-2';
                 } else if (index === 2) {
-                    trophyIcon = '<span class="trophy-bronze text-xl">🥉</span>';
+                    trophyIcon = '<span class="text-xl">🥉</span>';
                     bgClass = 'bg-orange-100 border-orange-300 border-2';
                 }
+                
+                const aiModeIcon = entry.aiMode === false ? ' 🔧' : ' 🤖';
                 
                 return `
                     <div class="flex justify-between items-center p-4 rounded-lg ${bgClass} transition-all duration-200 hover:transform hover:translate-x-2">
                         <div class="flex items-center gap-3">
                             ${trophyIcon || `<span class="font-bold text-gray-500 text-lg">#${index + 1}</span>`}
-                            <span class="font-medium text-gray-800">${entry.name}</span>
+                            <span class="font-medium text-gray-800">${entry.name}${aiModeIcon}</span>
                         </div>
                         <span class="font-mono font-bold text-indigo-600 text-lg">
                             ${formatTime(entry.time)}
