@@ -368,77 +368,33 @@
             },
             'CAP': {
                 paths: [
-                    'M80,180 Q150,120 220,180', // Mützenform
-                    'M70,180 L230,180', // Unterkante
-                    'M60,190 Q100,200 140,190', // Schirm links
-                    'M160,190 Q200,200 240,190', // Schirm rechts
-                    'M100,160 Q150,140 200,160' // Oberteil
+                    // Hauptform der Kappe
+                    'M80,180 Q70,120 120,100 Q180,90 220,100 Q270,120 290,180 Q280,200 220,210 Q180,215 120,210 Q90,200 80,180 Z',
+                    // Schirm der Kappe
+                    'M60,200 Q100,220 150,215 Q200,220 240,200 Q280,210 320,200 Q300,230 240,240 Q180,245 150,240 Q120,245 60,230 Q40,210 60,200 Z',
+                    // Schirm Unterseite
+                    'M70,210 Q110,225 150,220 Q190,225 230,210 Q270,215 310,210',
+                    // Kappe vorne - blauer Teil
+                    'M120,180 Q140,130 180,120 Q220,130 240,180 L240,200 Q180,190 120,200 Z',
+                    // Kappe hinten - roter Teil  
+                    'M240,180 Q260,140 280,180 L280,200 Q260,205 240,200',
+                    'M120,180 Q100,140 80,180 L80,200 Q100,205 120,200',
+                    // Mittellinie der Kappe
+                    'M180,95 Q180,130 180,180',
+                    // Knopf oben
+                    'M180,90 A8,8 0 1,1 179,90',
+                    'M180,85 A3,3 0 1,1 179,85',
+                    // Panel-Linien
+                    'M120,100 Q150,95 180,95',
+                    'M180,95 Q210,95 240,100',
+                    'M240,100 Q265,110 280,140',
+                    'M120,100 Q95,110 80,140',
+                    // Schirm-Details
+                    'M80,210 Q120,215 160,212 Q200,215 240,210',
+                    'M90,220 Q130,223 170,220 Q210,223 250,220'
                 ],
                 category: 'Kleidung',
                 hints: ['Kopfbedeckung', 'Hat einen Schirm vorne', 'Schützt vor Sonne']
-            },
-            'FRENCH': {
-                paths: [
-                    'M70,80 L230,80 L230,220 L70,220 Z', // Flaggen-Rechteck
-                    'M70,80 L130,80 L130,220 L70,220 Z', // Blauer Streifen
-                    'M170,80 L230,80 L230,220 L170,220 Z', // Roter Streifen
-                    'M130,80 L170,80 L170,220 L130,220 Z', // Weißer Streifen (Umriss)
-                    'M70,70 L70,230 M230,70 L230,230', // Fahnenstange
-                    'M60,70 L80,70' // Fahnenstangen-Top
-                ],
-                category: 'Sprache',
-                hints: ['Eine Sprache', 'Wird in Frankreich gesprochen', 'Flagge hat Blau, Weiß, Rot']
-            },
-            'ART': {
-                paths: [
-                    'M100,80 L200,80 L200,180 L100,180 Z', // Leinwand
-                    'M80,180 L220,260', // Staffelei-Bein links
-                    'M220,180 L80,260', // Staffelei-Bein rechts
-                    'M150,180 L150,280', // Staffelei-Bein mitte
-                    'M120,100 Q150,80 180,100', // Gemalter Hügel
-                    'M140,60 A20,20 0 1,1 140,59', // Sonne
-                    'M160,60 L170,50 M160,60 L170,70 M160,60 L150,50 M160,60 L150,70', // Sonnenstrahlen
-                    'M110,140 L110,170 M190,140 L190,170' // Bäume
-                ],
-                category: 'Schulfach',
-                hints: ['Kreatives Schulfach', 'Malen und Zeichnen', 'Braucht Pinsel und Farben']
-            },
-            'SCHOOL': {
-                paths: [
-                    'M50,80 L250,80 L250,220 L50,220 Z', // Gebäude
-                    'M100,120 L100,180 L140,180 L140,120 Z', // Tür
-                    'M160,120 L200,120 L200,160 L160,160 Z', // Fenster 1
-                    'M80,120 L120,120 L120,160 L80,160 Z', // Fenster 2
-                    'M120,150 A5,5 0 1,1 120,149', // Türknauf
-                    'M125,60 L175,60 L150,20 Z' // Dach
-                ],
-                category: 'Gebäude',
-                hints: ['Ort zum Lernen', 'Kinder gehen hier hin', 'Hat Klassenzimmer']
-            },
-            'GOOD': {
-                paths: [
-                    'M150,80 A20,20 0 1,1 150,79', // Smiley Gesicht
-                    'M135,90 A5,5 0 1,1 135,89', // Linkes Auge
-                    'M165,90 A5,5 0 1,1 165,89', // Rechtes Auge
-                    'M130,110 Q150,130 170,110', // Lächeln
-                    'M100,150 L200,150', // Daumen horizontal
-                    'M200,150 L200,200 L180,220 L160,200 L160,170' // Daumen vertikal
-                ],
-                category: 'Eigenschaft',
-                hints: ['Gegenteil von schlecht', 'Positive Bewertung', 'Synonym für toll']
-            },
-            'BELT': {
-                paths: [
-                    'M50,150 L250,150', // Gürtel
-                    'M50,140 L50,160 L250,160 L250,140', // Gürtelbreite
-                    'M200,130 L220,130 L220,170 L200,170 Z', // Schnalle
-                    'M205,145 L215,145 L215,155 L205,155 Z', // Schnallen-Detail
-                    'M80,145 A3,3 0 1,1 80,144', // Loch 1
-                    'M100,145 A3,3 0 1,1 100,144', // Loch 2
-                    'M120,145 A3,3 0 1,1 120,144' // Loch 3
-                ],
-                category: 'Accessoire',
-                hints: ['Hält die Hose', 'Trägst du um die Taille', 'Hat Löcher und Schnalle']
             }
         };
 
