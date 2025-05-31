@@ -1,29 +1,386 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vocabulary Challenge</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Englisch Lernspiele</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .game-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        }
+        
+        .leaderboard-entry {
+            transition: all 0.2s ease;
+        }
+        
+        .leaderboard-entry:hover {
+            transform: translateX(5px);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .icon-bounce {
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40%, 43% {
+                transform: translateY(-30px);
+            }
+            70% {
+                transform: translateY(-15px);
+            }
+            90% {
+                transform: translateY(-4px);
+            }
+        }
+        
+        .trophy-gold { color: #FFD700; }
+        .trophy-silver { color: #C0C0C0; }
+        .trophy-bronze { color: #CD7F32; }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body>
-  <header>
-    <h1>Vocabulary Challenge</h1>
-    <div class="top-bar">
-      <input type="text" id="player-name" placeholder="Your Name (optional)" />
-      <div class="buttons">
-        <button onclick="startLevel(1)">Level 1</button>
-        <button onclick="startLevel(2)">Level 2</button>
-        <button onclick="startLevel(3)">Level 3</button>
-        <button onclick="startLevel(4)">Level 4</button>
-      </div>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-4 drop-shadow-lg">
+                🎮 Englisch Lernspiele 🎮
+            </h1>
+            <p class="text-xl text-white/90 max-w-2xl mx-auto">
+                Verbessere dein Englisch mit unseren interaktiven Spielen! 
+                Sammle Punkte, vergleiche deine Zeiten und werde zum Champion!
+            </p>
+        </div>
+
+        <!-- Games Section -->
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+            <!-- Drag & Drop Game -->
+            <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
+                <div class="text-center mb-6">
+                    <div class="text-6xl mb-4 icon-bounce">🎯</div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Wort-Zuordnung</h2>
+                    <p class="text-gray-600">Verbinde deutsche und englische Wörter per Drag & Drop</p>
+                </div>
+                
+                <div class="space-y-4 mb-6">
+                    <div class="flex items-center justify-between text-sm text-gray-700">
+                        <span>🎲 10 zufällige Wörter</span>
+                        <span>⏱️ Zeitmessung</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm text-gray-700">
+                        <span>🏆 Bestenliste</span>
+                        <span>🎨 Post-it Design</span>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        🏆 Top 5 Bestenliste
+                        <div id="drag-loading" class="loading-spinner ml-3 hidden"></div>
+                    </h3>
+                    <div id="drag-leaderboard" class="space-y-2">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
+                
+                <button onclick="playDragDropGame()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    🎮 Jetzt spielen!
+                </button>
+            </div>
+
+            <!-- Crossword Game -->
+            <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
+                <div class="text-center mb-6">
+                    <div class="text-6xl mb-4 icon-bounce">🧩</div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Kreuzworträtsel</h2>
+                    <p class="text-gray-600">Löse Kreuzworträtsel mit englischen Hinweisen</p>
+                </div>
+                
+                <div class="space-y-4 mb-6">
+                    <div class="flex items-center justify-between text-sm text-gray-700">
+                        <span>🎯 10 Wörter pro Rätsel</span>
+                        <span>🧠 Englische Hinweise</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm text-gray-700">
+                        <span>⌨️ Tastatureingabe</span>
+                        <span>📊 Schwierigkeitsstufen</span>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        🏆 Top 5 Bestenliste
+                        <div id="crossword-loading" class="loading-spinner ml-3 hidden"></div>
+                    </h3>
+                    <div id="crossword-leaderboard" class="space-y-2">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
+                
+                <button onclick="playCrosswordGame()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    🧩 Jetzt spielen!
+                </button>
+            </div>
+        </div>
+
+        <!-- Combined Leaderboard -->
+        <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center">
+                    <span class="text-4xl mr-3">🏆</span>
+                    Hall of Fame
+                    <span class="text-4xl ml-3">🏆</span>
+                </h2>
+                <p class="text-gray-600">Die besten Spieler aller Zeiten</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Complete Drag & Drop Leaderboard -->
+                <div>
+                    <h3 class="text-xl font-bold text-green-600 mb-4 text-center">
+                        🎯 Wort-Zuordnung Champions
+                    </h3>
+                    <div id="full-drag-leaderboard" class="space-y-2">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
+
+                <!-- Complete Crossword Leaderboard -->
+                <div>
+                    <h3 class="text-xl font-bold text-purple-600 mb-4 text-center">
+                        🧩 Kreuzworträtsel Champions
+                    </h3>
+                    <div id="full-crossword-leaderboard" class="space-y-2">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="mt-8 text-center">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="game-card rounded-xl p-4 border border-white/20">
+                    <div class="text-2xl font-bold text-gray-800" id="total-players">-</div>
+                    <div class="text-sm text-gray-600">Spieler insgesamt</div>
+                </div>
+                <div class="game-card rounded-xl p-4 border border-white/20">
+                    <div class="text-2xl font-bold text-gray-800" id="total-games">-</div>
+                    <div class="text-sm text-gray-600">Spiele gespielt</div>
+                </div>
+                <div class="game-card rounded-xl p-4 border border-white/20">
+                    <div class="text-2xl font-bold text-gray-800" id="fastest-drag">-</div>
+                    <div class="text-sm text-gray-600">Schnellste Zuordnung</div>
+                </div>
+                <div class="game-card rounded-xl p-4 border border-white/20">
+                    <div class="text-2xl font-bold text-gray-800" id="fastest-crossword">-</div>
+                    <div class="text-sm text-gray-600">Schnellstes Rätsel</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-white/80">
+            <p>© 2025 Englisch Lernspiele - Viel Spaß beim Lernen! 🎓</p>
+        </div>
     </div>
-    <div id="timer">⏱️ Time: 0s</div>
-  </header>
-  <main id="game-container"></main>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script src="script.js"></script>
+
+    <script>
+        // Spiel-Navigation
+        function playDragDropGame() {
+            window.location.href = 'hermantoenglish.html';
+        }
+
+        function playCrosswordGame() {
+            window.location.href = 'crossword.html';
+        }
+
+        // Zeit-Formatierung
+        function formatTime(milliseconds) {
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            if (milliseconds < 60000) {
+                const ms = Math.floor((milliseconds % 1000) / 10);
+                return `${seconds}.${ms.toString().padStart(2, '0')}s`;
+            }
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // Bestenlisten laden
+        async function loadLeaderboards() {
+            // Drag & Drop Bestenliste laden
+            try {
+                document.getElementById('drag-loading').classList.remove('hidden');
+                const dragResponse = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/leaderboard.json');
+                if (dragResponse.ok) {
+                    const dragData = await dragResponse.json();
+                    if (dragData) {
+                        const dragLeaderboard = Object.values(dragData)
+                            .sort((a, b) => a.time - b.time)
+                            .slice(0, 10);
+                        
+                        // Top 5 für Game Card
+                        displayLeaderboard('drag-leaderboard', dragLeaderboard.slice(0, 5), 'green');
+                        // Komplette Top 10 für Hall of Fame
+                        displayLeaderboard('full-drag-leaderboard', dragLeaderboard, 'green');
+                        
+                        // Statistiken aktualisieren
+                        document.getElementById('fastest-drag').textContent = 
+                            dragLeaderboard.length > 0 ? formatTime(dragLeaderboard[0].time) : '-';
+                    }
+                }
+                document.getElementById('drag-loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Fehler beim Laden der Drag&Drop Bestenliste:', error);
+                document.getElementById('drag-loading').classList.add('hidden');
+            }
+
+            // Kreuzworträtsel Bestenliste laden
+            try {
+                document.getElementById('crossword-loading').classList.remove('hidden');
+                const crosswordResponse = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json');
+                if (crosswordResponse.ok) {
+                    const crosswordData = await crosswordResponse.json();
+                    if (crosswordData) {
+                        const crosswordLeaderboard = Object.values(crosswordData)
+                            .sort((a, b) => a.time - b.time)
+                            .slice(0, 10);
+                        
+                        // Top 5 für Game Card
+                        displayLeaderboard('crossword-leaderboard', crosswordLeaderboard.slice(0, 5), 'purple');
+                        // Komplette Top 10 für Hall of Fame
+                        displayLeaderboard('full-crossword-leaderboard', crosswordLeaderboard, 'purple');
+                        
+                        // Statistiken aktualisieren
+                        document.getElementById('fastest-crossword').textContent = 
+                            crosswordLeaderboard.length > 0 ? formatTime(crosswordLeaderboard[0].time) : '-';
+                    }
+                }
+                document.getElementById('crossword-loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Fehler beim Laden der Kreuzworträtsel Bestenliste:', error);
+                document.getElementById('crossword-loading').classList.add('hidden');
+            }
+
+            // Gesamtstatistiken berechnen
+            updateTotalStats();
+        }
+
+        function displayLeaderboard(elementId, leaderboard, color) {
+            const container = document.getElementById(elementId);
+            
+            if (leaderboard.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4">Noch keine Einträge</div>';
+                return;
+            }
+
+            const colorClasses = {
+                green: 'border-green-200 bg-green-50',
+                purple: 'border-purple-200 bg-purple-50'
+            };
+
+            container.innerHTML = leaderboard.map((entry, index) => {
+                let trophyIcon = '';
+                let bgClass = colorClasses[color];
+                
+                if (index === 0) {
+                    trophyIcon = '<span class="trophy-gold text-xl">🥇</span>';
+                    bgClass = 'bg-yellow-100 border-yellow-300 border-2';
+                } else if (index === 1) {
+                    trophyIcon = '<span class="trophy-silver text-xl">🥈</span>';
+                    bgClass = 'bg-gray-100 border-gray-300 border-2';
+                } else if (index === 2) {
+                    trophyIcon = '<span class="trophy-bronze text-xl">🥉</span>';
+                    bgClass = 'bg-orange-100 border-orange-300 border-2';
+                }
+
+                return `
+                    <div class="leaderboard-entry flex justify-between items-center p-3 rounded-lg ${bgClass} border">
+                        <div class="flex items-center gap-3">
+                            ${trophyIcon || `<span class="font-bold text-gray-500">#${index + 1}</span>`}
+                            <span class="font-medium text-gray-800">${entry.name}</span>
+                        </div>
+                        <span class="font-mono font-bold text-${color}-600">
+                            ${formatTime(entry.time)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateTotalStats() {
+            try {
+                // Beide Bestenlisten für Statistiken laden
+                const [dragResponse, crosswordResponse] = await Promise.all([
+                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/leaderboard.json'),
+                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json')
+                ]);
+
+                let totalPlayers = new Set();
+                let totalGames = 0;
+
+                if (dragResponse.ok) {
+                    const dragData = await dragResponse.json();
+                    if (dragData) {
+                        const dragEntries = Object.values(dragData);
+                        dragEntries.forEach(entry => totalPlayers.add(entry.name));
+                        totalGames += dragEntries.length;
+                    }
+                }
+
+                if (crosswordResponse.ok) {
+                    const crosswordData = await crosswordResponse.json();
+                    if (crosswordData) {
+                        const crosswordEntries = Object.values(crosswordData);
+                        crosswordEntries.forEach(entry => totalPlayers.add(entry.name));
+                        totalGames += crosswordEntries.length;
+                    }
+                }
+
+                document.getElementById('total-players').textContent = totalPlayers.size;
+                document.getElementById('total-games').textContent = totalGames;
+
+            } catch (error) {
+                console.error('Fehler beim Berechnen der Statistiken:', error);
+            }
+        }
+
+        // Bestenlisten beim Laden der Seite laden
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLeaderboards();
+            
+            // Alle 30 Sekunden aktualisieren
+            setInterval(loadLeaderboards, 30000);
+        });
+    </script>
 </body>
 </html>
