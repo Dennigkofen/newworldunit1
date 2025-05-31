@@ -289,26 +289,82 @@
         const drawings = {
             'SHOES': {
                 paths: [
-                    'M50,200 Q100,180 150,200 Q200,180 250,200', // Schuhform
-                    'M60,195 L240,195', // Sohle
-                    'M80,170 Q150,150 220,170', // Oberteil
-                    'M100,160 L100,140 M120,160 L120,140 M140,160 L140,140', // Schnürsenkel
-                    'M90,150 Q150,140 210,150' // Schnürung
+                    // Linker Schuh - Grundform
+                    'M80,180 Q60,160 60,140 Q60,120 80,110 Q120,100 160,110 Q180,120 180,140 Q180,160 160,180 L80,180 Z',
+                    // Linker Schuh - Sohle
+                    'M70,180 Q50,190 50,200 Q50,210 70,220 L170,220 Q190,210 190,200 Q190,190 170,180',
+                    // Linker Schuh - Zunge
+                    'M100,110 Q120,100 140,110 L140,140 Q120,150 100,140 Z',
+                    // Linker Schuh - Schnürsenkel horizontal
+                    'M90,120 L150,120 M90,130 L150,130 M90,140 L150,140 M90,150 L150,150',
+                    // Linker Schuh - Schnürsenkel Ösen
+                    'M85,120 A3,3 0 1,1 85,119 M155,120 A3,3 0 1,1 155,119',
+                    'M85,130 A3,3 0 1,1 85,129 M155,130 A3,3 0 1,1 155,129',
+                    'M85,140 A3,3 0 1,1 85,139 M155,140 A3,3 0 1,1 155,139',
+                    'M85,150 A3,3 0 1,1 85,149 M155,150 A3,3 0 1,1 155,149',
+                    
+                    // Rechter Schuh - Grundform
+                    'M220,160 Q200,140 200,120 Q200,100 220,90 Q260,80 300,90 Q320,100 320,120 Q320,140 300,160 L220,160 Z',
+                    // Rechter Schuh - Sohle  
+                    'M210,160 Q190,170 190,180 Q190,190 210,200 L310,200 Q330,190 330,180 Q330,170 310,160',
+                    // Rechter Schuh - Zunge
+                    'M240,90 Q260,80 280,90 L280,120 Q260,130 240,120 Z',
+                    // Rechter Schuh - Schnürsenkel horizontal
+                    'M230,100 L290,100 M230,110 L290,110 M230,120 L290,120 M230,130 L290,130',
+                    // Rechter Schuh - Schnürsenkel Ösen
+                    'M225,100 A3,3 0 1,1 225,99 M295,100 A3,3 0 1,1 295,99',
+                    'M225,110 A3,3 0 1,1 225,109 M295,110 A3,3 0 1,1 295,109',
+                    'M225,120 A3,3 0 1,1 225,119 M295,120 A3,3 0 1,1 295,119',
+                    'M225,130 A3,3 0 1,1 225,129 M295,130 A3,3 0 1,1 295,129',
+                    
+                    // Schnürsenkel-Bänder
+                    'M95,115 Q105,105 115,115 M145,115 Q135,105 125,115',
+                    'M235,95 Q245,85 255,95 M285,95 Q275,85 265,95'
                 ],
                 category: 'Kleidung',
                 hints: ['Du trägst sie an den Füßen', 'Haben Schnürsenkel', 'Schützen beim Gehen']
             },
             'WATCH': {
                 paths: [
-                    'M150,150 A50,50 0 1,1 149,150', // Zifferblatt
-                    'M100,130 Q80,120 80,150 Q80,180 100,170', // Linkes Armband
-                    'M200,130 Q220,120 220,150 Q220,180 200,170', // Rechtes Armband
-                    'M150,150 L150,120', // Stundenzeiger
-                    'M150,150 L170,130', // Minutenzeiger
-                    'M130,130 L170,130 L170,170 L130,170' // Zifferblatt-Details
+                    // Uhrengehäuse äußerer Ring
+                    'M150,150 A70,70 0 1,1 149,150',
+                    // Uhrengehäuse innerer Ring
+                    'M150,150 A60,60 0 1,1 149,150',
+                    // Zifferblatt
+                    'M150,150 A50,50 0 1,1 149,150',
+                    // Krone (Aufzieh-Knopf)
+                    'M220,150 L240,150 Q245,145 245,150 Q245,155 240,150 Z',
+                    'M240,145 L240,155',
+                    // Oberes Armband
+                    'M130,80 Q150,60 170,80 L170,100 Q150,90 130,100 Z',
+                    'M125,80 L175,80 L175,100 L125,100',
+                    // Unteres Armband  
+                    'M130,200 Q150,220 170,200 L170,180 Q150,190 130,180 Z',
+                    'M125,200 L175,200 L175,180 L125,180',
+                    // Schnalle
+                    'M140,70 L160,70 L160,85 L140,85 Z',
+                    'M145,75 L155,75 L155,80 L145,80 Z',
+                    // Ziffern 12, 3, 6, 9
+                    'M150,110 L145,105 L145,115 M155,105 L155,115 L145,115', // 12
+                    'M185,145 Q190,140 195,145 Q190,150 185,155', // 3
+                    'M145,185 Q150,190 155,185 Q150,195 145,185', // 6
+                    'M115,155 Q110,150 115,145 Q120,150 115,155', // 9
+                    // Weitere Ziffern
+                    'M170,125 L165,120 L175,135', // 1
+                    'M175,165 Q180,160 180,170 Q175,175 170,170', // 2
+                    'M170,175 Q175,180 175,170', // 4
+                    'M135,185 Q130,180 135,175 Q140,180 135,185', // 5
+                    'M125,175 Q120,170 125,165', // 7
+                    'M125,135 Q120,130 125,125 Q130,130 125,135', // 8
+                    'M130,125 L125,120 L135,135', // 10
+                    'M135,115 L130,110 L140,125', // 11
+                    // Uhrzeiger
+                    'M150,150 L150,125', // Stundenzeiger (10 Uhr)
+                    'M150,150 L165,140', // Minutenzeiger (2)
+                    'M150,150 A2,2 0 1,1 149,150' // Mittelpunkt
                 ],
                 category: 'Accessoire',
-                hints: ['Zeigt die Zeit an', 'Trägst du am Handgelenk', 'Hat Zeiger oder Display']
+                hints: ['Zeigt die Zeit an', 'Trägst du am Handgelenk', 'Hat Zeiger und Zahlen']
             },
             'CAP': {
                 paths: [
@@ -323,27 +379,29 @@
             },
             'FRENCH': {
                 paths: [
-                    'M100,100 L100,220', // F - senkrechter Strich
-                    'M100,100 L180,100', // F - oberer Strich
-                    'M100,160 L160,160', // F - mittlerer Strich
-                    'M200,100 Q240,120 240,160 Q240,200 200,220', // R - Bogen
-                    'M200,100 L200,220', // R - senkrechter Strich
-                    'M200,160 L240,220' // R - Diagonale
+                    'M70,80 L230,80 L230,220 L70,220 Z', // Flaggen-Rechteck
+                    'M70,80 L130,80 L130,220 L70,220 Z', // Blauer Streifen
+                    'M170,80 L230,80 L230,220 L170,220 Z', // Roter Streifen
+                    'M130,80 L170,80 L170,220 L130,220 Z', // Weißer Streifen (Umriss)
+                    'M70,70 L70,230 M230,70 L230,230', // Fahnenstange
+                    'M60,70 L80,70' // Fahnenstangen-Top
                 ],
                 category: 'Sprache',
-                hints: ['Eine Sprache', 'Wird in Frankreich gesprochen', 'Beginnt mit F']
+                hints: ['Eine Sprache', 'Wird in Frankreich gesprochen', 'Flagge hat Blau, Weiß, Rot']
             },
             'ART': {
                 paths: [
-                    'M80,220 L120,100 L160,220', // A
-                    'M95,180 L145,180', // A - Querbalken
-                    'M180,100 Q220,120 220,160 Q220,200 180,220', // R - Bogen
-                    'M180,100 L180,220', // R - senkrechter Strich
-                    'M180,160 L220,220', // R - Diagonale
-                    'M240,100 L280,100 M260,100 L260,220' // T
+                    'M100,80 L200,80 L200,180 L100,180 Z', // Leinwand
+                    'M80,180 L220,260', // Staffelei-Bein links
+                    'M220,180 L80,260', // Staffelei-Bein rechts
+                    'M150,180 L150,280', // Staffelei-Bein mitte
+                    'M120,100 Q150,80 180,100', // Gemalter Hügel
+                    'M140,60 A20,20 0 1,1 140,59', // Sonne
+                    'M160,60 L170,50 M160,60 L170,70 M160,60 L150,50 M160,60 L150,70', // Sonnenstrahlen
+                    'M110,140 L110,170 M190,140 L190,170' // Bäume
                 ],
                 category: 'Schulfach',
-                hints: ['Kreatives Schulfach', 'Malen und Zeichnen', 'Nur 3 Buchstaben']
+                hints: ['Kreatives Schulfach', 'Malen und Zeichnen', 'Braucht Pinsel und Farben']
             },
             'SCHOOL': {
                 paths: [
