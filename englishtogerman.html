@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wort-Sniper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .game-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            backdrop-filter: blur(10px);
+        }
+        
+        .flying-word {
+            position: absolute;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            animation: flyAcross 8s linear;
+            z-index: 10;
+        }
+        
+        .flying-word:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .flying-word.clicked {
+            animation: none;
+            transform: scale(1.2);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.6);
+        }
+        
+        @keyframes flyAcross {
+            from {
+                left: -200px;
+            }
+            to {
+                left: calc(100vw + 200px);
+            }
+        }
+        
+        .power-up {
+            position: absolute;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            animation: flyAcross 6s linear;
+            z-index: 15;
+        }
+        
+        .hearts {
+            color: #ef4444;
+        }
+        
+        .combo-display {
+            animation: comboAnimation 0.5s ease-out;
+        }
+        
+        @keyframes comboAnimation {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .score-popup {
+            position: absolute;
+            color: #10b981;
+            font-weight: bold;
+            font-size: 18px;
+            pointer-events: none;
+            animation: scorePopup 1s ease-out forwards;
+            z-index: 20;
+        }
+        
+        @keyframes scorePopup {
+            0% { 
+                transform: translateY(0) scale(0.8); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translateY(-50px) scale(1.2); 
+                opacity: 0; 
+            }
+        }
+        
+        .game-area {
+            height: 70vh;
+            overflow: hidden;
+            position: relative;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+        }
+        
+        .trophy-gold { color: #FFD700; }
+        .trophy-silver { color: #C0C0C0; }
+        .trophy-bronze { color: #CD7F32; }
+        
+        .celebration {
+            animation: celebrate 0.8s ease-out;
+        }
+        
+        @keyframes celebrate {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .slow-motion {
+            animation-duration: 16s !important;
+        }
+        
+        .input-field {
+            border: 2px solid #3b82f6;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        .input-field:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <button onclick="goHome()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all duration-300 backdrop-blur-sm">
+                    ← Zurück zur Startseite
+                </button>
+                <h1 class="text-4xl font-bold text-white drop-shadow-lg">
+                    🎯 Wort-Sniper
+                </h1>
+            </div>
+            <p class="text-white/90 text-lg">Schieße die fliegenden Wörter ab und übersetze sie ins Deutsche!</p>
+        </div>
+
+        <!-- Game Stats -->
+        <div class="flex justify-center gap-4 mb-6">
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-600" id="score">0</div>
+                    <div class="text-sm text-gray-600">Punkte</div>
+                </div>
+            </div>
+            
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center">
+                    <div class="text-2xl hearts" id="lives">❤️❤️❤️</div>
+                    <div class="text-sm text-gray-600">Leben</div>
+                </div>
+            </div>
+            
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center combo-display">
+                    <div class="text-2xl font-bold text-orange-600" id="combo">0x</div>
+                    <div class="text-sm text-gray-600">Combo</div>
+                </div>
+            </div>
+            
+            <div class="game-card px-4 py-2 rounded-lg shadow-lg">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="timer">60</div>
+                    <div class="text-sm text-gray-600">Zeit</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="flex justify-center gap-4 mb-6">
+            <button id="startBtn" onclick="startGame()" class="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                🎮 Spiel starten
+            </button>
+            
+            <div id="powerUpIndicator" class="game-card px-4 py-2 rounded-lg shadow-lg hidden">
+                <div class="text-center">
+                    <div class="text-lg font-bold text-yellow-600" id="powerUpText">Kein Power-Up</div>
+                    <div class="text-sm text-gray-600">Aktives Power-Up</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div id="gameArea" class="game-area game-card shadow-lg mb-6 hidden">
+            <div class="absolute inset-0 flex items-center justify-center text-white/50 text-xl font-bold pointer-events-none">
+                Klicke auf die fliegenden Wörter!
+            </div>
+        </div>
+
+        <!-- Translation Input -->
+        <div id="translationArea" class="game-card rounded-xl p-6 shadow-lg mb-6 hidden">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Übersetze: <span id="currentWord" class="text-blue-600"></span></h3>
+                <div class="flex gap-4 max-w-md mx-auto">
+                    <input 
+                        type="text" 
+                        id="translationInput" 
+                        placeholder="Deutsche Übersetzung..." 
+                        class="input-field flex-1 px-4 py-3 rounded-lg outline-none"
+                        autocomplete="off"
+                    >
+                    <button onclick="submitTranslation()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold transition-colors">
+                        ✓
+                    </button>
+                </div>
+                <div class="mt-2 text-sm text-gray-600">
+                    Drücke Enter oder klicke ✓ um zu bestätigen
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="game-card rounded-xl p-6 shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800 flex items-center justify-center gap-2">
+                🏆 Bestenliste - Top 10
+            </h2>
+            <div id="leaderboard" class="space-y-2">
+                <!-- Wird per JavaScript geladen -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="game-card p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 celebration">
+            <div class="text-center">
+                <div class="text-6xl mb-4">🎯</div>
+                <h3 class="text-3xl font-bold text-blue-600 mb-4">Spiel beendet!</h3>
+                <p class="text-gray-700 mb-2">Deine Punktzahl: <span id="finalScore" class="font-bold text-blue-600"></span></p>
+                <p class="text-gray-700 mb-4">Beste Combo: <span id="finalCombo" class="font-bold text-orange-600"></span></p>
+                
+                <input type="text" id="playerName" placeholder="Dein Name für die Bestenliste" 
+                       class="w-full p-3 border border-gray-300 rounded-lg mb-4 text-center" maxLength="20">
+                
+                <div class="flex gap-3">
+                    <button onclick="saveScore()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-bold transition-colors">
+                        💾 Speichern
+                    </button>
+                    <button onclick="closeModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition-colors">
+                        ❌ Überspringen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wortpaare (Englisch -> Deutsch)
+        const wordPairs = {
+            'SHOES': 'Schuhe',
+            'WATCH': 'Uhr', 
+            'STUDENT': 'Schüler',
+            'SCHOOL': 'Schule',
+            'FRENCH': 'Französisch',
+            'GOOD': 'Gut',
+            'PRACTICE': 'Üben',
+            'BELT': 'Gürtel',
+            'CAP': 'Mütze',
+            'ART': 'Kunst',
+            'SCIENCE': 'Naturwissenschaft',
+            'HISTORY': 'Geschichte',
+            'MATHS': 'Mathematik',
+            'GEOGRAPHY': 'Geografie',
+            'SUBJECT': 'Fach',
+            'BACKPACK': 'Rucksack',
+            'CLOTHING': 'Kleidung',
+            'BLOUSE': 'Bluse',
+            'JUMPER': 'Pullover',
+            'WEEKEND': 'Wochenende',
+            'EVERYDAY': 'Alltag',
+            'EXCITING': 'Aufregend',
+            'INTERESTED': 'Interessiert',
+            'PASSIONATE': 'Leidenschaftlich',
+            'PROUD': 'Stolz'
+        };
+
+        // Spielvariablen
+        let gameActive = false;
+        let score = 0;
+        let lives = 3;
+        let combo = 0;
+        let maxCombo = 0;
+        let timeLeft = 60;
+        let currentTargetWord = null;
+        let gameInterval = null;
+        let timerInterval = null;
+        let wordSpawnInterval = null;
+        let powerUps = {
+            slowMotion: false,
+            doublePoints: false,
+            skipWord: false
+        };
+
+        // Hilfsfunktionen
+        function getRandomWord() {
+            const words = Object.keys(wordPairs);
+            return words[Math.floor(Math.random() * words.length)];
+        }
+
+        function getRandomPosition() {
+            const gameArea = document.getElementById('gameArea');
+            const rect = gameArea.getBoundingClientRect();
+            return Math.random() * (rect.height - 100) + 50;
+        }
+
+        function updateDisplay() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = '❤️'.repeat(lives);
+            document.getElementById('combo').textContent = combo + 'x';
+            document.getElementById('timer').textContent = timeLeft;
+        }
+
+        function showScorePopup(points, x, y) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = '+' + points;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                document.body.removeChild(popup);
+            }, 1000);
+        }
+
+        // Navigation
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        // Spiel-Logik
+        function startGame() {
+            gameActive = true;
+            score = 0;
+            lives = 3;
+            combo = 0;
+            maxCombo = 0;
+            timeLeft = 60;
+            currentTargetWord = null;
+            
+            document.getElementById('gameArea').classList.remove('hidden');
+            document.getElementById('startBtn').textContent = '🔄 Neues Spiel';
+            document.getElementById('powerUpIndicator').classList.remove('hidden');
+            
+            updateDisplay();
+            clearGameArea();
+            
+            // Timer starten
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+            
+            // Wörter spawnen
+            spawnWords();
+            wordSpawnInterval = setInterval(spawnWords, 2000);
+            
+            // Gelegentliche Power-Ups
+            setTimeout(spawnPowerUp, 10000);
+            setInterval(spawnPowerUp, 15000);
+        }
+
+        function spawnWords() {
+            if (!gameActive) return;
+            
+            const word = getRandomWord();
+            const wordElement = document.createElement('div');
+            wordElement.className = 'flying-word';
+            if (powerUps.slowMotion) {
+                wordElement.classList.add('slow-motion');
+            }
+            wordElement.textContent = word;
+            wordElement.style.top = getRandomPosition() + 'px';
+            wordElement.dataset.word = word;
+            
+            wordElement.addEventListener('click', () => selectWord(wordElement));
+            
+            document.getElementById('gameArea').appendChild(wordElement);
+            
+            // Entferne Wort nach Animation
+            setTimeout(() => {
+                if (wordElement.parentNode && !wordElement.classList.contains('clicked')) {
+                    wordElement.parentNode.removeChild(wordElement);
+                    if (gameActive) {
+                        loseLife();
+                    }
+                }
+            }, powerUps.slowMotion ? 16000 : 8000);
+        }
+
+        function spawnPowerUp() {
+            if (!gameActive) return;
+            
+            const powerUpTypes = ['🐌 Slow Motion', '⚡ Double Points', '⏭️ Skip Word'];
+            const powerUpType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+            
+            const powerUpElement = document.createElement('div');
+            powerUpElement.className = 'power-up';
+            powerUpElement.textContent = powerUpType;
+            powerUpElement.style.top = getRandomPosition() + 'px';
+            
+            powerUpElement.addEventListener('click', () => activatePowerUp(powerUpType, powerUpElement));
+            
+            document.getElementById('gameArea').appendChild(powerUpElement);
+            
+            setTimeout(() => {
+                if (powerUpElement.parentNode) {
+                    powerUpElement.parentNode.removeChild(powerUpElement);
+                }
+            }, 6000);
+        }
+
+        function activatePowerUp(type, element) {
+            element.parentNode.removeChild(element);
+            
+            if (type.includes('Slow Motion')) {
+                powerUps.slowMotion = true;
+                document.getElementById('powerUpText').textContent = 'Slow Motion (10s)';
+                setTimeout(() => {
+                    powerUps.slowMotion = false;
+                    document.getElementById('powerUpText').textContent = 'Kein Power-Up';
+                }, 10000);
+            } else if (type.includes('Double Points')) {
+                powerUps.doublePoints = true;
+                document.getElementById('powerUpText').textContent = 'Double Points (15s)';
+                setTimeout(() => {
+                    powerUps.doublePoints = false;
+                    document.getElementById('powerUpText').textContent = 'Kein Power-Up';
+                }, 15000);
+            } else if (type.includes('Skip Word')) {
+                if (currentTargetWord) {
+                    skipCurrentWord();
+                }
+            }
+        }
+
+        function selectWord(wordElement) {
+            if (!gameActive) return;
+            
+            wordElement.classList.add('clicked');
+            currentTargetWord = wordElement.dataset.word;
+            
+            document.getElementById('currentWord').textContent = currentTargetWord;
+            document.getElementById('translationArea').classList.remove('hidden');
+            document.getElementById('translationInput').focus();
+            
+            setTimeout(() => {
+                if (wordElement.parentNode) {
+                    wordElement.parentNode.removeChild(wordElement);
+                }
+            }, 200);
+        }
+
+        function submitTranslation() {
+            const input = document.getElementById('translationInput');
+            const translation = input.value.trim().toLowerCase();
+            const correctTranslation = wordPairs[currentTargetWord].toLowerCase();
+            
+            if (translation === correctTranslation) {
+                // Richtige Antwort
+                combo++;
+                maxCombo = Math.max(maxCombo, combo);
+                
+                let points = 10 + (combo * 2);
+                if (powerUps.doublePoints) {
+                    points *= 2;
+                }
+                
+                score += points;
+                showScorePopup(points, window.innerWidth / 2, window.innerHeight / 2);
+                
+                document.querySelector('.combo-display').classList.add('combo-display');
+                setTimeout(() => {
+                    document.querySelector('.combo-display').classList.remove('combo-display');
+                }, 500);
+            } else {
+                // Falsche Antwort
+                combo = 0;
+                loseLife();
+            }
+            
+            input.value = '';
+            document.getElementById('translationArea').classList.add('hidden');
+            currentTargetWord = null;
+            updateDisplay();
+        }
+
+        function skipCurrentWord() {
+            document.getElementById('translationInput').value = '';
+            document.getElementById('translationArea').classList.add('hidden');
+            currentTargetWord = null;
+        }
+
+        function loseLife() {
+            lives--;
+            combo = 0;
+            updateDisplay();
+            
+            if (lives <= 0) {
+                endGame();
+            }
+        }
+
+        function clearGameArea() {
+            const gameArea = document.getElementById('gameArea');
+            const words = gameArea.querySelectorAll('.flying-word, .power-up');
+            words.forEach(word => word.remove());
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            clearInterval(wordSpawnInterval);
+            clearGameArea();
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalCombo').textContent = maxCombo + 'x';
+            document.getElementById('gameOverModal').classList.remove('hidden');
+            
+            document.getElementById('translationArea').classList.add('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('gameOverModal').classList.add('hidden');
+            loadLeaderboard();
+        }
+
+        async function saveScore() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) {
+                alert('Bitte gib deinen Namen ein!');
+                return;
+            }
+            
+            try {
+                const scoreData = {
+                    name: name,
+                    score: score,
+                    maxCombo: maxCombo,
+                    timestamp: Date.now()
+                };
+                
+                await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/sniper-leaderboard.json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(scoreData)
+                });
+                
+                closeModal();
+                
+            } catch (error) {
+                console.error('Fehler beim Speichern:', error);
+                alert('Fehler beim Speichern der Punktzahl!');
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/sniper-leaderboard.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        const leaderboard = Object.values(data)
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, 10);
+                        
+                        displayLeaderboard(leaderboard);
+                    }
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Bestenliste:', error);
+            }
+        }
+
+        function displayLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard');
+            
+            if (leaderboard.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-8">Noch keine Einträge vorhanden</div>';
+                return;
+            }
+            
+            container.innerHTML = leaderboard.map((entry, index) => {
+                let trophyIcon = '';
+                let bgClass = 'bg-gray-50';
+                
+                if (index === 0) {
+                    trophyIcon = '<span class="trophy-gold text-xl">🥇</span>';
+                    bgClass = 'bg-yellow-100 border-yellow-300 border-2';
+                } else if (index === 1) {
+                    trophyIcon = '<span class="trophy-silver text-xl">🥈</span>';
+                    bgClass = 'bg-gray-100 border-gray-300 border-2';
+                } else if (index === 2) {
+                    trophyIcon = '<span class="trophy-bronze text-xl">🥉</span>';
+                    bgClass = 'bg-orange-100 border-orange-300 border-2';
+                }
+                
+                return `
+                    <div class="flex justify-between items-center p-4 rounded-lg ${bgClass} transition-all duration-200 hover:transform hover:translate-x-2">
+                        <div class="flex items-center gap-3">
+                            ${trophyIcon || `<span class="font-bold text-gray-500 text-lg">#${index + 1}</span>`}
+                            <span class="font-medium text-gray-800">${entry.name}</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-mono font-bold text-blue-600 text-lg">${entry.score} Punkte</div>
+                            <div class="text-sm text-gray-500">Max Combo: ${entry.maxCombo}x</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLeaderboard();
+            
+            document.getElementById('translationInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitTranslation();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
