@@ -87,6 +87,14 @@
                 </h1>
             </div>
             <p class="text-white/90 text-lg">Erkläre englische Wörter auf Englisch! Die KI bewertet deine Erklärungen.</p>
+            <div class="mt-4 bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+                <h3 class="text-white font-bold mb-2">💡 Erklärungs-Optionen:</h3>
+                <div class="text-white/90 text-sm space-y-1">
+                    <div>• <strong>Normale Erklärung:</strong> "Something you wear on your feet"</div>
+                    <div>• <strong>Synonym:</strong> "(S) Exercise" oder "Synonym: Exercise"</div>
+                    <div>• <strong>Antonym:</strong> "(A) Bad" oder "Antonym: Bad"</div>
+                </div>
+            </div>
         </div>
 
         <!-- Game Controls -->
@@ -123,13 +131,16 @@
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Aktuelles Wort</h2>
                     <div id="currentWord" class="text-6xl font-bold text-indigo-600 mb-4">WORD</div>
-                    <p class="text-gray-600">Erkläre dieses Wort auf Englisch!</p>
+                    <div class="text-gray-600 space-y-1">
+                        <p>Erkläre dieses Wort auf Englisch!</p>
+                        <p class="text-sm"><strong>Tipp:</strong> Du kannst auch Synonyme "(S)" oder Antonyme "(A)" verwenden</p>
+                    </div>
                 </div>
                 
                 <div class="space-y-4">
                     <textarea id="explanationInput" 
                              class="w-full p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-                             placeholder="Type your explanation in English here..."
+                             placeholder="Type your explanation, synonym (S) or antonym (A) here..."
                              rows="4"></textarea>
                     
                     <button id="submitBtn" onclick="submitExplanation()" 
@@ -409,23 +420,32 @@
 
 Student explanation: "${explanation}"
 
+The student can provide:
+1. Normal explanation: "something you wear on feet"
+2. Synonym: "(S) exercise" or "synonym: exercise" or "synonym to exercise"
+3. Antonym: "(A) bad" or "antonym: bad" or "antonym to bad"
+
 Respond ONLY with valid JSON in this exact format:
 {
   "correct": true,
   "precise": true,
+  "explanation_type": "normal",
   "needs_correction": false,
   "corrected_explanation": "",
-  "feedback": "Perfekt! Richtig und präzise erklärt."
+  "feedback": "Perfekt! Richtig erklärt."
 }
 
 Rules:
-- correct: true if explanation is factually right for "${word}"
-- precise: true if specific enough (not too general like "something you wear" for shoes)
+- correct: true if explanation/synonym/antonym is factually right for "${word}"
+- precise: true if specific enough (synonyms/antonyms are automatically precise if correct)
+- explanation_type: "normal", "synonym", or "antonym"
 - needs_correction: true ONLY if correct=true AND precise=true BUT has grammar/spelling errors
 - corrected_explanation: ONLY provide if needs_correction=true, otherwise empty string
 - feedback: Brief encouraging German comment (max 30 words)
 
-Be strict with precision. General explanations should get precise=false.
+For synonyms: Check if the provided word is actually a synonym of "${word}"
+For antonyms: Check if the provided word is actually an antonym of "${word}"
+Be strict with precision for normal explanations.
 JSON only, no other text.`;
 
                 const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -439,7 +459,7 @@ JSON only, no other text.`;
                         }],
                         generationConfig: {
                             temperature: 0.1,
-                            maxOutputTokens: 200
+                            maxOutputTokens: 250
                         }
                     })
                 });
@@ -482,11 +502,70 @@ JSON only, no other text.`;
 
         // Fallback-Bewertung ohne KI
         function evaluateWithoutAI(word, explanation) {
-            // Einfache Regeln für Fallback
             const wordLower = word.toLowerCase();
-            const expLower = explanation.toLowerCase();
+            const expLower = explanation.toLowerCase().trim();
             
-            // Basis-Keywords für häufige Wörter
+            // Prüfe ob es ein Synonym/Antonym ist
+            const isSynonym = expLower.match(/^\(s\)|^synonym/) || expLower.includes('synonym:') || expLower.includes('synonym to');
+            const isAntonym = expLower.match(/^\(a\)|^antonym/) || expLower.includes('antonym:') || expLower.includes('antonym to');
+            
+            let explanationType = 'normal';
+            let extractedWord = expLower;
+            
+            if (isSynonym) {
+                explanationType = 'synonym';
+                extractedWord = expLower.replace(/^\(s\)|synonym:?|synonym to|^\s*/, '').trim();
+            } else if (isAntonym) {
+                explanationType = 'antonym';
+                extractedWord = expLower.replace(/^\(a\)|antonym:?|antonym to|^\s*/, '').trim();
+            }
+            
+            // Einfache Synonym/Antonym-Listen für Fallback
+            const synonyms = {
+                'practice': ['exercise', 'training', 'rehearsal', 'drill'],
+                'good': ['excellent', 'great', 'fine', 'nice', 'wonderful'],
+                'excited': ['thrilled', 'enthusiastic', 'eager'],
+                'passionate': ['enthusiastic', 'devoted', 'intense'],
+                'proud': ['pleased', 'satisfied', 'content'],
+                'interested': ['curious', 'fascinated', 'engaged'],
+                'exciting': ['thrilling', 'stimulating', 'amazing']
+            };
+            
+            const antonyms = {
+                'good': ['bad', 'terrible', 'awful', 'poor'],
+                'interested': ['bored', 'uninterested', 'indifferent'],
+                'excited': ['calm', 'bored', 'uninterested'],
+                'proud': ['ashamed', 'embarrassed', 'humble'],
+                'passionate': ['indifferent', 'apathetic', 'unenthusiastic']
+            };
+            
+            if (explanationType === 'synonym') {
+                const wordSynonyms = synonyms[wordLower] || [];
+                const isCorrectSynonym = wordSynonyms.includes(extractedWord);
+                return {
+                    correct: isCorrectSynonym,
+                    precise: isCorrectSynonym,
+                    explanation_type: 'synonym',
+                    needs_correction: false,
+                    corrected_explanation: "",
+                    feedback: isCorrectSynonym ? "Gutes Synonym!" : "Das ist kein passendes Synonym."
+                };
+            }
+            
+            if (explanationType === 'antonym') {
+                const wordAntonyms = antonyms[wordLower] || [];
+                const isCorrectAntonym = wordAntonyms.includes(extractedWord);
+                return {
+                    correct: isCorrectAntonym,
+                    precise: isCorrectAntonym,
+                    explanation_type: 'antonym',
+                    needs_correction: false,
+                    corrected_explanation: "",
+                    feedback: isCorrectAntonym ? "Gutes Antonym!" : "Das ist kein passendes Antonym."
+                };
+            }
+            
+            // Normale Erklärung
             const keywords = {
                 'shoes': ['foot', 'feet', 'wear', 'walk'],
                 'watch': ['time', 'wrist', 'clock'],
@@ -506,9 +585,10 @@ JSON only, no other text.`;
             return {
                 correct: hasKeyword || isLongEnough,
                 precise: hasMultipleWords && isLongEnough && hasKeyword,
+                explanation_type: 'normal',
                 needs_correction: false,
                 corrected_explanation: "",
-                feedback: hasKeyword ? "Gut! Das scheint zu passen." : "Hmm, versuche es nochmal anders."
+                feedback: hasKeyword && hasMultipleWords ? "Gut! Das scheint zu passen." : "Hmm, versuche es nochmal spezifischer."
             };
         }
 
@@ -577,6 +657,20 @@ JSON only, no other text.`;
                 title = 'Zu ungenau';
             }
             
+            // Icon je nach Erklärungstyp anpassen
+            let typeIcon = '';
+            let typeText = '';
+            if (evaluation.explanation_type === 'synonym') {
+                typeIcon = '🔄';
+                typeText = 'Synonym erkannt';
+            } else if (evaluation.explanation_type === 'antonym') {
+                typeIcon = '↔️';
+                typeText = 'Antonym erkannt';
+            } else {
+                typeIcon = '📝';
+                typeText = 'Erklärung';
+            }
+            
             let correctionHtml = '';
             if (evaluation.needs_correction && evaluation.corrected_explanation) {
                 correctionHtml = `
@@ -592,6 +686,7 @@ JSON only, no other text.`;
                     <div class="flex items-center gap-2 mb-2">
                         <span class="text-2xl">${icon}</span>
                         <span class="font-bold text-lg">${title}</span>
+                        <span class="text-sm opacity-75">${typeIcon} ${typeText}</span>
                     </div>
                     <p class="mb-2">${evaluation.feedback}</p>
                 </div>
@@ -617,7 +712,11 @@ JSON only, no other text.`;
                 ${!evaluation.correct || !evaluation.precise ? `
                 <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div class="text-yellow-800 text-sm">
-                        💡 <strong>Tipp:</strong> ${!evaluation.correct ? 'Überdenke, was das Wort wirklich bedeutet.' : 'Füge mehr Details hinzu, um spezifischer zu werden.'}
+                        💡 <strong>Tipp:</strong> ${!evaluation.correct ? 
+                            (evaluation.explanation_type === 'synonym' ? 'Das ist kein passendes Synonym.' :
+                             evaluation.explanation_type === 'antonym' ? 'Das ist kein passendes Antonym.' :
+                             'Überdenke, was das Wort wirklich bedeutet.') : 
+                            'Füge mehr Details hinzu, um spezifischer zu werden.'}
                     </div>
                 </div>
                 ` : ''}
