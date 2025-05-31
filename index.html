@@ -81,7 +81,7 @@
         </div>
 
         <!-- Games Section -->
-        <div class="grid md:grid-cols-2 gap-8 mb-12">
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
             <!-- Drag & Drop Game -->
             <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
                 <div class="text-center mb-6">
@@ -131,7 +131,7 @@
                     </div>
                     <div class="flex items-center justify-between text-sm text-gray-700">
                         <span>⌨️ Tastatureingabe</span>
-                        <span>📊 Schwierigkeitsstufen</span>
+                        <span>📊 Intelligente Navigation</span>
                     </div>
                 </div>
                 
@@ -149,6 +149,40 @@
                     🧩 Jetzt spielen!
                 </button>
             </div>
+
+            <!-- AI Explanation Game -->
+            <div class="game-card rounded-2xl p-8 border border-white/20 shadow-2xl">
+                <div class="text-center mb-6">
+                    <div class="text-6xl mb-4 icon-bounce">🤖</div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">KI-Erklärungs-Spiel</h2>
+                    <p class="text-gray-600">Erkläre englische Wörter auf Englisch - KI bewertet!</p>
+                </div>
+                
+                <div class="space-y-4 mb-6">
+                    <div class="flex items-center justify-between text-sm text-gray-700">
+                        <span>🤖 KI-Bewertung</span>
+                        <span>📝 Englische Erklärungen</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm text-gray-700">
+                        <span>✅ Präzisions-Check</span>
+                        <span>🔄 Rechtschreib-Korrektur</span>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        🏆 Top 5 Bestenliste
+                        <div id="explanation-loading" class="loading-spinner ml-3 hidden"></div>
+                    </h3>
+                    <div id="explanation-leaderboard" class="space-y-2">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
+                
+                <button onclick="playExplanationGame()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    🤖 Jetzt spielen!
+                </button>
+            </div>
         </div>
 
         <!-- Combined Leaderboard -->
@@ -162,7 +196,7 @@
                 <p class="text-gray-600">Die besten Spieler aller Zeiten</p>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-8">
+            <div class="grid md:grid-cols-3 gap-8">
                 <!-- Complete Drag & Drop Leaderboard -->
                 <div>
                     <h3 class="text-xl font-bold text-green-600 mb-4 text-center">
@@ -182,12 +216,22 @@
                         <!-- Wird per JavaScript geladen -->
                     </div>
                 </div>
+
+                <!-- Complete Explanation Leaderboard -->
+                <div>
+                    <h3 class="text-xl font-bold text-indigo-600 mb-4 text-center">
+                        🤖 KI-Erklärungs Champions
+                    </h3>
+                    <div id="full-explanation-leaderboard" class="space-y-2">
+                        <!-- Wird per JavaScript geladen -->
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Statistics -->
         <div class="mt-8 text-center">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div class="game-card rounded-xl p-4 border border-white/20">
                     <div class="text-2xl font-bold text-gray-800" id="total-players">-</div>
                     <div class="text-sm text-gray-600">Spieler insgesamt</div>
@@ -203,6 +247,10 @@
                 <div class="game-card rounded-xl p-4 border border-white/20">
                     <div class="text-2xl font-bold text-gray-800" id="fastest-crossword">-</div>
                     <div class="text-sm text-gray-600">Schnellstes Rätsel</div>
+                </div>
+                <div class="game-card rounded-xl p-4 border border-white/20">
+                    <div class="text-2xl font-bold text-gray-800" id="fastest-explanation">-</div>
+                    <div class="text-sm text-gray-600">Schnellste Erklärung</div>
                 </div>
             </div>
         </div>
@@ -221,6 +269,10 @@
 
         function playCrosswordGame() {
             window.location.href = 'crossword.html';
+        }
+
+        function playExplanationGame() {
+            window.location.href = 'explanation.html';
         }
 
         // Zeit-Formatierung
@@ -291,6 +343,33 @@
                 document.getElementById('crossword-loading').classList.add('hidden');
             }
 
+            // KI-Erklärungs-Spiel Bestenliste laden
+            try {
+                document.getElementById('explanation-loading').classList.remove('hidden');
+                const explanationResponse = await fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/explanation-leaderboard.json');
+                if (explanationResponse.ok) {
+                    const explanationData = await explanationResponse.json();
+                    if (explanationData) {
+                        const explanationLeaderboard = Object.values(explanationData)
+                            .sort((a, b) => a.time - b.time)
+                            .slice(0, 10);
+                        
+                        // Top 5 für Game Card
+                        displayLeaderboard('explanation-leaderboard', explanationLeaderboard.slice(0, 5), 'indigo');
+                        // Komplette Top 10 für Hall of Fame
+                        displayLeaderboard('full-explanation-leaderboard', explanationLeaderboard, 'indigo');
+                        
+                        // Statistiken aktualisieren
+                        document.getElementById('fastest-explanation').textContent = 
+                            explanationLeaderboard.length > 0 ? formatTime(explanationLeaderboard[0].time) : '-';
+                    }
+                }
+                document.getElementById('explanation-loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Fehler beim Laden der KI-Erklärungs Bestenliste:', error);
+                document.getElementById('explanation-loading').classList.add('hidden');
+            }
+
             // Gesamtstatistiken berechnen
             updateTotalStats();
         }
@@ -305,7 +384,8 @@
 
             const colorClasses = {
                 green: 'border-green-200 bg-green-50',
-                purple: 'border-purple-200 bg-purple-50'
+                purple: 'border-purple-200 bg-purple-50',
+                indigo: 'border-indigo-200 bg-indigo-50'
             };
 
             container.innerHTML = leaderboard.map((entry, index) => {
@@ -339,10 +419,11 @@
 
         async function updateTotalStats() {
             try {
-                // Beide Bestenlisten für Statistiken laden
-                const [dragResponse, crosswordResponse] = await Promise.all([
+                // Alle drei Bestenlisten für Statistiken laden
+                const [dragResponse, crosswordResponse, explanationResponse] = await Promise.all([
                     fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/leaderboard.json'),
-                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json')
+                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/crossword-leaderboard.json'),
+                    fetch('https://wortartenspiele-default-rtdb.europe-west1.firebasedatabase.app/explanation-leaderboard.json')
                 ]);
 
                 let totalPlayers = new Set();
@@ -363,6 +444,15 @@
                         const crosswordEntries = Object.values(crosswordData);
                         crosswordEntries.forEach(entry => totalPlayers.add(entry.name));
                         totalGames += crosswordEntries.length;
+                    }
+                }
+
+                if (explanationResponse.ok) {
+                    const explanationData = await explanationResponse.json();
+                    if (explanationData) {
+                        const explanationEntries = Object.values(explanationData);
+                        explanationEntries.forEach(entry => totalPlayers.add(entry.name));
+                        totalGames += explanationEntries.length;
                     }
                 }
 
