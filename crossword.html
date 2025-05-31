@@ -401,7 +401,7 @@
 
         function generateCrossword() {
             const shuffled = shuffleArray(wordData);
-            selectedWords = shuffled.slice(0, 8); // Weniger Wörter für bessere Platzierung
+            selectedWords = shuffled.slice(0, 10); // Exakt 10 Wörter
             
             let newGrid = createEmptyGrid();
             const placedWords = [];
@@ -421,16 +421,17 @@
                 number: wordNumber++
             });
             
-            // Weitere Wörter platzieren
-            for (let wordIdx = 1; wordIdx < selectedWords.length && wordIdx < 8; wordIdx++) {
+            // Alle 9 weiteren Wörter platzieren (insgesamt 10)
+            for (let wordIdx = 1; wordIdx < 10; wordIdx++) {
                 const currentWord = selectedWords[wordIdx];
                 let placed = false;
                 let attempts = 0;
-                const maxAttempts = 100;
+                const maxAttempts = 200; // Mehr Versuche für 10 Wörter
                 
                 while (!placed && attempts < maxAttempts) {
                     attempts++;
                     
+                    // Versuche Kreuzung mit allen bereits platzierten Wörtern
                     for (let placedWord of placedWords) {
                         if (placed) break;
                         
@@ -468,8 +469,44 @@
                             if (placed) break;
                         }
                     }
+                    
+                    // Falls nach vielen Versuchen immer noch nicht platziert, versuche zufällige Position
+                    if (!placed && attempts > maxAttempts * 0.7) {
+                        const direction = Math.random() > 0.5 ? 'across' : 'down';
+                        const maxRow = direction === 'across' ? GRID_SIZE : GRID_SIZE - currentWord.word.length;
+                        const maxCol = direction === 'across' ? GRID_SIZE - currentWord.word.length : GRID_SIZE;
+                        
+                        const randomRow = Math.floor(Math.random() * maxRow);
+                        const randomCol = Math.floor(Math.random() * maxCol);
+                        
+                        if (canPlaceWord(newGrid, currentWord.word, randomRow, randomCol, direction)) {
+                            newGrid = placeWord(newGrid, currentWord, randomRow, randomCol, direction, wordNumber);
+                            placedWords.push({
+                                ...currentWord,
+                                row: randomRow,
+                                col: randomCol,
+                                direction: direction,
+                                number: wordNumber++
+                            });
+                            placed = true;
+                        }
+                    }
+                }
+                
+                // Falls ein Wort nicht platziert werden konnte, starte von vorne
+                if (!placed) {
+                    console.log(`Word ${currentWord.word} could not be placed, retrying...`);
+                    return generateCrossword(); // Rekursiv neu versuchen
                 }
             }
+            
+            // Sicherstellen, dass wir exakt 10 Wörter haben
+            if (placedWords.length !== 10) {
+                console.log(`Only ${placedWords.length} words placed, retrying...`);
+                return generateCrossword(); // Neu versuchen bis 10 Wörter platziert sind
+            }
+            
+            console.log(`Successfully placed all 10 words:`, placedWords.map(w => w.word));
             
             // Hinweise erstellen
             const acrossClues = placedWords
@@ -588,7 +625,8 @@
                 userAnswers[`${row}-${col}`] = value;
                 updateProgress();
                 
-                if (countCompletedWords() === clues.across.length + clues.down.length) {
+                // Prüfe ob alle 10 Wörter vollständig sind
+                if (countCompletedWords() === 10) {
                     setTimeout(() => endGame(), 500);
                 } else {
                     moveToNextCell(row, col);
